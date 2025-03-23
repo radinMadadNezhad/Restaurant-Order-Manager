@@ -1,0 +1,49 @@
+/* Custom styles */
+.badge {
+    font-size: 0.9em;
+}
+
+.badge.bg-pending {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.badge.bg-in_progress {
+    background-color: #17a2b8;
+    color: #fff;
+}
+
+.badge.bg-completed {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.badge.bg-cancelled {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.badge.bg-draft {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+.badge.bg-submitted {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.badge.bg-confirmed {
+    background-color: #17a2b8;
+    color: #fff;
+}
+
+/* Table row styles for completed orders */
+tr.order-completed {
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+tr.order-completed td {
+    opacity: 0.8;
+} 

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Ingredient{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h4 mb-4">Edit Ingredient</h2>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="{{ form.ingredient.id_for_label }}" class="form-label">Ingredient</label>
+                            {{ form.ingredient }}
+                        </div>
+                        <div class="mb-3">
+                            <label for="{{ form.quantity.id_for_label }}" class="form-label">Quantity</label>
+                            {{ form.quantity }}
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'view_order_details' order_type='ingredient' order_id=order.id %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

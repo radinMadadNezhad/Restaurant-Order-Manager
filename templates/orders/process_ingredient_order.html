@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}Process Ingredient Order{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="h5 mb-0">Process Ingredient Order #{{ order.id }}</h2>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h5>Order Details</h5>
+                    <p><strong>Orderer:</strong> {{ order.orderer.username }}</p>
+                    <p><strong>Role:</strong> {{ order.orderer.get_role_display }}</p>
+                    <p><strong>Status:</strong> <span class="badge bg-{{ order.status|lower }}">{{ order.get_status_display }}</span></p>
+                    <p><strong>Created:</strong> {{ order.created_at }}</p>
+                    {% if order.notes %}
+                        <p><strong>Notes:</strong> {{ order.notes }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <h5>Order Items</h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Ingredient</th>
+                                    <th>Quantity</th>
+                                    <th>Unit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items.all %}
+                                <tr>
+                                    <td>{{ item.ingredient.name }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>{{ item.ingredient.unit }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {% if order.status == 'PENDING' %}
+                <div class="mt-4">
+                    <form method="post" action="{% url 'process_ingredient_order' order.id %}">
+                        {% csrf_token %}
+                        <button type="submit" name="action" value="start" class="btn btn-primary">Start Processing</button>
+                    </form>
+                </div>
+                {% elif order.status == 'IN_PROGRESS' %}
+                <div class="mt-4">
+                    <form method="post" action="{% url 'process_ingredient_order' order.id %}">
+                        {% csrf_token %}
+                        <button type="submit" name="action" value="complete" class="btn btn-success">Mark as Completed</button>
+                    </form>
+                </div>
+                {% endif %}
+
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

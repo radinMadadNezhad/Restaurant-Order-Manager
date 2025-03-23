@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Process Ingredient Order{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">Ingredient Order #{{ order.id }}</h3>
+                <div>
+                    <span class="badge {% if order.status == 'PENDING' %}bg-warning{% elif order.status == 'IN_PROGRESS' %}bg-info{% else %}bg-success{% endif %}">{{ order.get_status_display }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <p><strong>Created by:</strong> {{ order.orderer.username }}</p>
+                    <p><strong>Date:</strong> {{ order.created_at|date:"F j, Y, g:i a" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Status:</strong> {{ order.get_status_display }}</p>
+                    {% if order.notes %}
+                    <p><strong>Notes:</strong> {{ order.notes }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if order.status == 'PENDING' and user.is_authenticated %}
+                <div class="d-flex justify-content-between mb-3">
+                    <div>
+                        {% if not user.is_staff_role %}
+                        <a href="{% url 'add_ingredient_to_order' order_id=order.id station='Unassigned' %}" class="btn btn-primary me-2">Add Ingredient</a>
+                        {% endif %}
+                    </div>
+                    
+                    {% if user.is_staff_role %}
+                    <div>
+                        <form action="{% url 'process_ingredient_order' order.id %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">Process Order</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+            
+            {% if items_by_station %}
+                {% for station, items in items_by_station.items %}
+                    <div class="mb-4">
+                        <h4 class="border-bottom pb-2 fw-bold">{{ station|default:"Unassigned" }}</h4>
+                        {% if items %}
+                            <table class="table table-striped">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Ingredient</th>
+                                        <th>Quantity</th>
+                                        <th>Unit</th>
+                                        <th>Added By</th>
+                                        {% if order.status == 'PENDING' %}
+                                        <th>Actions</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in items %}
+                                    <tr>
+                                        <td>{{ item.ingredient.name }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>{{ item.ingredient.unit }}</td>
+                                        <td>{{ item.added_by.username|default:order.orderer.username }}</td>
+                                        {% if order.status == 'PENDING' %}
+                                        <td>
+                                            {% if not user.is_staff_role and user == item.added_by %}
+                                            <a href="{% url 'edit_ingredient_order_item' order_id=order.id item_id=item.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                            {% endif %}
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <p>No items ordered for this station.</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <table class="table table-striped">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Ingredient</th>
+                            <th>Quantity</th>
+                            <th>Unit</th>
+                            {% if order.status == 'PENDING' %}
+                            <th>Actions</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items.all %}
+                        <tr>
+                            <td>{{ item.ingredient.name }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.ingredient.unit }}</td>
+                            {% if order.status == 'PENDING' %}
+                            <td>
+                                {% if not user.is_staff_role and user == item.added_by %}
+                                <a href="{% url 'edit_ingredient_order_item' order_id=order.id item_id=item.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">No items in this order.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+
+            <div class="mt-3">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+                {% if order.status == 'IN_PROGRESS' and user.is_staff_role %}
+                <form action="{% url 'complete_ingredient_order' order.id %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">Mark as Completed</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

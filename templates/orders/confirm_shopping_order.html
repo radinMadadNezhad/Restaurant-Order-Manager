@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirm Shopping Order{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0">Confirm Shopping Order #{{ order.id }}</h2>
+                <span class="badge bg-{{ order.status|lower }}">{{ order.get_status_display }}</span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <p><strong>Created by:</strong> {{ order.chef.get_full_name|default:order.chef.username }}</p>
+                        <p><strong>Role:</strong> {{ order.chef.get_role_display }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Created:</strong> {{ order.created_at|date:"M d, Y H:i" }}</p>
+                        <p><strong>Last Updated:</strong> {{ order.updated_at|date:"M d, Y H:i" }}</p>
+                    </div>
+                </div>
+
+                {% if order.notes %}
+                <div class="mb-4">
+                    <h5>Order Notes</h5>
+                    <p class="mb-0">{{ order.notes }}</p>
+                </div>
+                {% endif %}
+
+                <h5>Order Items</h5>
+                <div class="table-responsive mb-4">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Ingredient</th>
+                                <th>Quantity</th>
+                                <th>Unit</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.items.all %}
+                            <tr>
+                                <td>{{ item.ingredient.name }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>{{ item.ingredient.unit }}</td>
+                                <td>{{ item.notes|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-info">
+                    <h6 class="alert-heading">Confirmation Notice</h6>
+                    <p class="mb-0">By confirming this order, you acknowledge that:</p>
+                    <ul class="mb-0">
+                        <li>The items and quantities are appropriate</li>
+                        <li>The order will be sent to the shopping assistant</li>
+                        <li>This action cannot be undone</li>
+                    </ul>
+                </div>
+
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">Confirm Order</button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
