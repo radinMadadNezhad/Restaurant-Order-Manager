@@ -53,6 +53,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'restaurant_management.middleware.ErrorLoggingMiddleware',  # Our custom error middleware
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -76,6 +77,12 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+            ],
+            'loaders': [
+                ('django.template.loaders.cached.Loader', [
+                    'django.template.loaders.filesystem.Loader',
+                    'django.template.loaders.app_directories.Loader',
+                ]),
             ],
         },
     },
@@ -191,6 +198,11 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000',
 ]
 
+# Session and cookie settings for Railway deployment
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Production optimization settings
 if not DEBUG:
     # Disable admin interface in production to save memory if not needed
@@ -213,3 +225,18 @@ if not DEBUG:
     
     # Optimize database connections
     CONN_MAX_AGE = 60
+
+# Authentication settings
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Set a shorter timeout for debug mode
+if DEBUG:
+    SESSION_COOKIE_AGE = 86400  # 24 hours
+else:
+    SESSION_COOKIE_AGE = 43200  # 12 hours for production
+
+# Update security for forms
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Changed to False for better UX

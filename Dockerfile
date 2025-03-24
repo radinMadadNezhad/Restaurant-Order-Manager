@@ -16,5 +16,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . .
 
-# Run using Procfile
-CMD ["sh", "-c", "python manage.py collectstatic --noinput && gunicorn restaurant_management.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 60"] 
+# Run using Procfile with buffering settings
+CMD ["sh", "-c", "python manage.py collectstatic --noinput && gunicorn restaurant_management.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 60 --access-logfile - --log-level warning"] 
