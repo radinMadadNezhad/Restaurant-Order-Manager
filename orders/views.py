@@ -29,8 +29,8 @@ def dashboard(request):
     else:
         ingredient_orders = IngredientOrder.objects.none()
 
-    # Get shopping orders - only staff and admin can see these
-    if request.user.is_staff_role() or request.user.is_admin_role():
+    # Get shopping orders - only staff, admin, and users with permission can see these
+    if request.user.is_staff_role() or request.user.is_admin_role() or request.user.can_create_shopping_orders():
         shopping_orders = ShoppingOrder.objects.select_related('chef').all().order_by('-created_at')
     else:
         shopping_orders = ShoppingOrder.objects.none()
@@ -84,6 +84,9 @@ def create_ingredient_order(request):
 
 @login_required
 def create_shopping_order(request):
+    # Debug print to help diagnose permission issues
+    print(f"User: {request.user.username}, Can create orders: {request.user.can_create_shopping_orders()}")
+    
     if not ShoppingService.user_can_create_shopping_order(request.user):
         messages.error(request, "You don't have permission to create shopping orders.")
         return redirect('dashboard')

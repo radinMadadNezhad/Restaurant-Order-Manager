@@ -20,6 +20,11 @@ class CustomUser(AbstractUser):
         blank=True,
         help_text="Restaurant location"
     )
+    # New field to grant specific users permission to create shopping orders
+    can_submit_shopping_orders = models.BooleanField(
+        default=False, 
+        help_text="Allow this user to create shopping orders regardless of their role"
+    )
 
     def is_staff_role(self):
         return self.role == self.Role.STAFF
@@ -38,6 +43,16 @@ class CustomUser(AbstractUser):
 
     def is_hot_station_role(self):
         return self.role == self.Role.HOT_STATION
+
+    def can_create_shopping_orders(self):
+        # Users can create shopping orders if:
+        # 1. They are staff or admin OR
+        # 2. They have explicit permission via can_submit_shopping_orders field
+        is_staff = self.is_staff_role()
+        is_admin = self.is_admin_role()
+        has_perm = self.can_submit_shopping_orders
+        print(f"User {self.username} - Staff: {is_staff}, Admin: {is_admin}, Has permission: {has_perm}")
+        return is_staff or is_admin or has_perm
 
     def get_station_name(self):
         """Return the station name based on the user's role"""

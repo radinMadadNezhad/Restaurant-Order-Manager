@@ -23,9 +23,11 @@ class ShoppingOrderForm(forms.ModelForm):
         fields = ['notes']
 
 class ShoppingOrderItemForm(forms.ModelForm):
+    notes = forms.CharField(widget=forms.Textarea(attrs={'rows': 2}), required=False)
+    
     class Meta:
         model = ShoppingOrderItem
-        fields = ['ingredient', 'quantity']
+        fields = ['ingredient', 'quantity', 'notes']
 
 class IngredientForm(forms.ModelForm):
     class Meta:

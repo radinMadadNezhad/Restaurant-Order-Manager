@@ -1,4 +1,5 @@
 {% load static %}
+{% load user_tags %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,12 +23,14 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
                         </li>
-                        {% if user.is_orderer or user.is_salad_bar_role or user.is_sandwich_role or user.is_hot_station_role %}
+                        <!-- For station users who can submit ingredient orders -->
+                        {% if user|is_orderer or user|is_salad_bar_role or user|is_sandwich_role or user|is_hot_station_role %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'create_ingredient_order' %}">New Ingredient Order</a>
                             </li>
                         {% endif %}
-                        {% if user.is_staff_role or user.is_admin_role %}
+                        <!-- For staff, admin, or users with shopping order permission -->
+                        {% if user|can_create_shopping_orders %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'create_shopping_order' %}">New Shopping Order</a>
                             </li>
