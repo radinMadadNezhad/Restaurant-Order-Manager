@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/restaurant_db
+      - PORT=8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn restaurant_management.wsgi:application --bind 0.0.0.0:8000"
+
+  db:
+    image: postgres:16
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=restaurant_db
+
+volumes:
+  postgres_data: 
