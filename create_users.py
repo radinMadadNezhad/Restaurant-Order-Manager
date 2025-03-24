@@ -2,6 +2,7 @@ import os
 import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'restaurant_management.settings')
+os.environ.setdefault('CSRF_TRUSTED_ORIGINS', 'https://restaurant-order-manager-production.up.railway.app')
 django.setup()
 
 from django.contrib.auth import get_user_model

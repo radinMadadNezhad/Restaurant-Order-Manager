@@ -183,3 +183,10 @@ LOGIN_URL = 'login'
 # Session settings
 SESSION_COOKIE_AGE = 86400  # 24 hours in seconds
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# CSRF Settings
+CSRF_TRUSTED_ORIGINS = [
+    'https://restaurant-order-manager-production.up.railway.app',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
