@@ -190,3 +190,26 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:8000',
 ]
+
+# Production optimization settings
+if not DEBUG:
+    # Disable admin interface in production to save memory if not needed
+    # INSTALLED_APPS = [app for app in INSTALLED_APPS if app != 'django.contrib.admin']
+    
+    # Reduce logging verbosity
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+            },
+        },
+        'root': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+    }
+    
+    # Optimize database connections
+    CONN_MAX_AGE = 60
