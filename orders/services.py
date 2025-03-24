@@ -13,7 +13,7 @@ class OrderService:
     @staticmethod
     def user_can_create_shopping_order(user):
         """Check if user has permission to create shopping orders"""
-        return user.is_staff_role() or user.is_admin_role()
+        return user.can_create_shopping_orders()
     
     @staticmethod
     def user_can_confirm_shopping_order(user):
@@ -44,7 +44,7 @@ class OrderService:
     @staticmethod
     def user_can_view_shopping_order(user):
         """Check if user has permission to view shopping orders"""
-        return user.is_staff_role() or user.is_admin_role()
+        return user.is_staff_role() or user.is_admin_role() or user.can_create_shopping_orders()
     
     @staticmethod
     def create_ingredient_order(user, notes, items_data):
@@ -135,7 +135,7 @@ class ShoppingService:
     @staticmethod
     def user_can_create_shopping_order(user):
         """Check if user has permission to create shopping orders"""
-        return user.is_staff_role()
+        return user.can_create_shopping_orders()
     
     @staticmethod
     def create_shopping_order(user, notes, items_data):
