@@ -79,10 +79,8 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
             ],
             'loaders': [
-                ('django.template.loaders.cached.Loader', [
-                    'django.template.loaders.filesystem.Loader',
-                    'django.template.loaders.app_directories.Loader',
-                ]),
+                'django.template.loaders.filesystem.Loader',
+                'django.template.loaders.app_directories.Loader',
             ],
         },
     },
@@ -94,35 +92,37 @@ WSGI_APPLICATION = 'restaurant_management.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# Default database configuration using SQLite (for development only)
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Use SQLite for local development
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
-
-# Override database configuration with PostgreSQL if DATABASE_URL is set
-# This allows flexible configuration for different environments
-database_url = os.environ.get('DATABASE_URL')
-if database_url:
-    DATABASES['default'] = dj_database_url.parse(database_url)
 else:
-    # For local development, if DATABASE_URL is not set but we want to use PostgreSQL
-    postgres_db = os.environ.get('POSTGRES_DB', 'restaurant_db')
-    postgres_user = os.environ.get('POSTGRES_USER', 'postgres')
-    postgres_password = os.environ.get('POSTGRES_PASSWORD', 'postgres')
-    postgres_host = os.environ.get('POSTGRES_HOST', 'localhost')
-    postgres_port = os.environ.get('POSTGRES_PORT', '5432')
-    
-    if os.environ.get('USE_POSTGRES', 'False').lower() == 'true':
-        DATABASES['default'] = {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': postgres_db,
-            'USER': postgres_user,
-            'PASSWORD': postgres_password,
-            'HOST': postgres_host,
-            'PORT': postgres_port,
+    # Use PostgreSQL in production
+    # Override database configuration with PostgreSQL if DATABASE_URL is set
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url:
+        DATABASES = {'default': dj_database_url.parse(database_url)}
+    else:
+        # Fallback configuration
+        postgres_db = os.environ.get('POSTGRES_DB', 'restaurant_db')
+        postgres_user = os.environ.get('POSTGRES_USER', 'postgres')
+        postgres_password = os.environ.get('POSTGRES_PASSWORD', 'postgres')
+        postgres_host = os.environ.get('POSTGRES_HOST', 'localhost')
+        postgres_port = os.environ.get('POSTGRES_PORT', '5432')
+        
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': postgres_db,
+                'USER': postgres_user,
+                'PASSWORD': postgres_password,
+                'HOST': postgres_host,
+                'PORT': postgres_port,
+            }
         }
 
 
