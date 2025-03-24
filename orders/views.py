@@ -24,17 +24,18 @@ from .services import OrderService, ShoppingService
 def dashboard(request):
     # Get ingredient orders - show all orders to all station users and staff
     if request.user.is_staff_role() or request.user.is_orderer() or request.user.is_salad_bar_role() or request.user.is_sandwich_role() or request.user.is_hot_station_role():
-        # All these roles can see all orders
-        ingredient_orders = IngredientOrder.objects.all().order_by('-created_at')
+        # All these roles can see all orders - optimize with select_related
+        ingredient_orders = IngredientOrder.objects.select_related('orderer').all().order_by('-created_at')
     else:
         ingredient_orders = IngredientOrder.objects.none()
 
     # Get shopping orders - only staff and admin can see these
     if request.user.is_staff_role() or request.user.is_admin_role():
-        shopping_orders = ShoppingOrder.objects.all().order_by('-created_at')
+        shopping_orders = ShoppingOrder.objects.select_related('chef').all().order_by('-created_at')
     else:
         shopping_orders = ShoppingOrder.objects.none()
 
+    # Simple context without complex processing
     context = {
         'ingredient_orders': ingredient_orders,
         'shopping_orders': shopping_orders,
