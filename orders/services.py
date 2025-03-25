@@ -7,8 +7,9 @@ class OrderService:
     @staticmethod
     def user_can_create_ingredient_order(user):
         """Check if user has permission to create ingredient orders"""
-        return (user.is_orderer() or user.is_salad_bar_role() or 
-                user.is_sandwich_role() or user.is_hot_station_role())
+        return ((user.is_orderer() or user.is_salad_bar_role() or 
+                user.is_sandwich_role() or user.is_hot_station_role()) or
+                user.has_perm('accounts.order_ingredients'))
     
     @staticmethod
     def user_can_create_shopping_order(user):
@@ -18,33 +19,39 @@ class OrderService:
     @staticmethod
     def user_can_confirm_shopping_order(user):
         """Check if user has permission to confirm shopping orders"""
-        return user.is_admin_role()
+        return user.is_admin_role() or user.has_perm('accounts.confirm_shopping_order')
     
     @staticmethod
     def user_can_process_ingredient_order(user):
         """Check if user has permission to process ingredient orders"""
-        return user.is_staff_role()
+        return user.is_staff_role() or user.has_perm('accounts.process_orders')
     
     @staticmethod
     def user_can_edit_ingredient_order(user, order):
         """Check if user has permission to edit an ingredient order"""
         # Allow station users to edit any order, but staff users can only process orders, not edit them
-        return (user.is_orderer() or 
+        return ((user.is_orderer() or 
                 user.is_salad_bar_role() or 
                 user.is_sandwich_role() or 
-                user.is_hot_station_role())
+                user.is_hot_station_role()) or
+                user.has_perm('accounts.order_ingredients'))
     
     @staticmethod
     def user_can_view_ingredient_order(user):
         """Check if user has permission to view ingredient orders"""
-        return (user.is_staff_role() or user.is_orderer() or
+        return ((user.is_staff_role() or user.is_orderer() or
                user.is_salad_bar_role() or user.is_sandwich_role() or
-               user.is_hot_station_role())
+               user.is_hot_station_role()) or
+               user.has_perm('accounts.view_ingredient_order') or
+               user.has_perm('accounts.admin_full_access'))
     
     @staticmethod
     def user_can_view_shopping_order(user):
         """Check if user has permission to view shopping orders"""
-        return user.is_staff_role() or user.is_admin_role() or user.can_create_shopping_orders()
+        return (user.is_staff_role() or user.is_admin_role() or 
+                user.can_create_shopping_orders() or 
+                user.has_perm('accounts.view_shopping_order') or
+                user.has_perm('accounts.admin_full_access'))
     
     @staticmethod
     def create_ingredient_order(user, notes, items_data):

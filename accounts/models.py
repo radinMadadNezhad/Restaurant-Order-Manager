@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Permission, Group
 from django.db import models
 
 class CustomUser(AbstractUser):
@@ -26,6 +26,17 @@ class CustomUser(AbstractUser):
         help_text="Allow this user to create shopping orders regardless of their role"
     )
 
+    class Meta:
+        permissions = [
+            ("submit_shopping_order", "Can submit shopping orders"),
+            ("confirm_shopping_order", "Can confirm shopping orders"),
+            ("view_shopping_order", "Can view shopping orders"),
+            ("order_ingredients", "Can order ingredients"),
+            ("view_ingredient_order", "Can view ingredient orders"),
+            ("process_orders", "Can process orders"),
+            ("admin_full_access", "Has full access to view and confirm everything"),
+        ]
+
     def is_staff_role(self):
         return self.role == self.Role.STAFF
 
@@ -47,12 +58,14 @@ class CustomUser(AbstractUser):
     def can_create_shopping_orders(self):
         # Users can create shopping orders if:
         # 1. They are staff or admin OR
-        # 2. They have explicit permission via can_submit_shopping_orders field
+        # 2. They have explicit permission via can_submit_shopping_orders field OR
+        # 3. They have the submit_shopping_order permission
         is_staff = self.is_staff_role()
         is_admin = self.is_admin_role()
         has_perm = self.can_submit_shopping_orders
-        print(f"User {self.username} - Staff: {is_staff}, Admin: {is_admin}, Has permission: {has_perm}")
-        return is_staff or is_admin or has_perm
+        has_permission = self.has_perm('accounts.submit_shopping_order')
+        print(f"User {self.username} - Staff: {is_staff}, Admin: {is_admin}, Has permission: {has_perm}, Django perm: {has_permission}")
+        return is_staff or is_admin or has_perm or has_permission
 
     def get_station_name(self):
         """Return the station name based on the user's role"""
