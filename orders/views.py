@@ -4,34 +4,276 @@ from django.contrib import messages
 from django.http import HttpResponseForbidden
 from django.db import transaction
 from django.utils import timezone
+from django.core.mail import send_mail
+from django.conf import settings
 from .models import (
     Ingredient,
     IngredientOrder,
     IngredientOrderItem,
     ShoppingOrder,
-    ShoppingOrderItem
+    ShoppingOrderItem,
+    ShoppingIngredient,
+    ContactMessage,
 )
 from .forms import (
     IngredientOrderForm,
     IngredientOrderItemForm,
     ShoppingOrderForm,
     ShoppingOrderItemForm,
-    IngredientForm
+    IngredientForm,
+    ContactForm,
 )
 from .services import OrderService, ShoppingService
 
+
+def contact(request):
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            msg = ContactMessage.objects.create(
+                name=form.cleaned_data['name'],
+                email=form.cleaned_data['email'],
+                subject=form.cleaned_data['subject'],
+                message=form.cleaned_data['message'],
+            )
+
+            # Send email notification to admin
+            admin_email = getattr(settings, 'ADMIN_EMAIL', None)
+            if admin_email:
+                send_mail(
+                    subject=f"New Contact Message: {msg.subject}",
+                    message=(
+                        f"From: {msg.name} <{msg.email}>\n\n"
+                        f"Message:\n{msg.message}"
+                    ),
+                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@localhost'),
+                    recipient_list=[admin_email],
+                    fail_silently=True,
+                )
+            return redirect('contact_success')
+    else:
+        form = ContactForm()
+    return render(request, 'contact.html', {'form': form})
+
+
+def contact_success(request):
+    return render(request, 'contact_success.html')
+
+
+# Management dashboard access control
+from functools import wraps
+
+
+def admin_required(view_func):
+    @wraps(view_func)
+    @login_required
+    def _wrapped(request, *args, **kwargs):
+        user = request.user
+        if getattr(user, 'is_admin_role', None) and user.is_admin_role():
+            return view_func(request, *args, **kwargs)
+        if user.has_perm('accounts.admin_full_access'):
+            return view_func(request, *args, **kwargs)
+        messages.error(request, "You do not have access to Management.")
+        return redirect('dashboard')
+    return _wrapped
+
+
+@admin_required
+def management_home(request):
+    from accounts.models import CustomUser
+    from django.db.models import Count
+    users_by_location = (
+        CustomUser.objects.values('location').annotate(total=Count('id')).order_by('location')
+    )
+    orders_pending = IngredientOrder.objects.filter(status=IngredientOrder.Status.PENDING).count()
+    orders_completed = IngredientOrder.objects.filter(status=IngredientOrder.Status.COMPLETED).count()
+    recent_contacts = ContactMessage.objects.order_by('-created_at')[:5]
+    return render(request, 'management/index.html', {
+        'users_by_location': users_by_location,
+        'orders_pending': orders_pending,
+        'orders_completed': orders_completed,
+        'recent_contacts': recent_contacts,
+    })
+
+
+# Users CRUD
+from .forms import ManagementUserForm, StationForm, IngredientManagementForm, StationAssignmentForm
+
+
+@admin_required
+def management_users(request):
+    from accounts.models import CustomUser
+    users = CustomUser.objects.all().order_by('username')
+    return render(request, 'management/users_list.html', {'users': users})
+
+
+@admin_required
+def management_user_create(request):
+    form = ManagementUserForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'User created.')
+        return redirect('management_users')
+    return render(request, 'management/user_form.html', {'form': form, 'title': 'Create User'})
+
+
+@admin_required
+def management_user_edit(request, pk):
+    from accounts.models import CustomUser
+    user = get_object_or_404(CustomUser, pk=pk)
+    form = ManagementUserForm(request.POST or None, instance=user)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'User updated.')
+        return redirect('management_users')
+    return render(request, 'management/user_form.html', {'form': form, 'title': 'Edit User'})
+
+
+@admin_required
+def management_user_delete(request, pk):
+    from accounts.models import CustomUser
+    user = get_object_or_404(CustomUser, pk=pk)
+    if request.method == 'POST':
+        user.delete()
+        messages.success(request, 'User deleted.')
+        return redirect('management_users')
+    return render(request, 'management/confirm_delete.html', {'object': user, 'type': 'User'})
+
+
+# Stations CRUD
+@admin_required
+def management_stations(request):
+    from .models import Station
+    stations = Station.objects.all()
+    return render(request, 'management/stations_list.html', {'stations': stations})
+
+
+@admin_required
+def management_station_create(request):
+    form = StationForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Station created.')
+        return redirect('management_stations')
+    return render(request, 'management/station_form.html', {'form': form, 'title': 'Create Station'})
+
+
+@admin_required
+def management_station_edit(request, pk):
+    from .models import Station
+    station = get_object_or_404(Station, pk=pk)
+    form = StationForm(request.POST or None, instance=station)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Station updated.')
+        return redirect('management_stations')
+    return render(request, 'management/station_form.html', {'form': form, 'title': 'Edit Station'})
+
+
+@admin_required
+def management_station_delete(request, pk):
+    from .models import Station
+    station = get_object_or_404(Station, pk=pk)
+    if request.method == 'POST':
+        station.delete()
+        messages.success(request, 'Station deleted.')
+        return redirect('management_stations')
+    return render(request, 'management/confirm_delete.html', {'object': station, 'type': 'Station'})
+
+
+# Ingredients CRUD
+@admin_required
+def management_ingredients(request):
+    ingredients = Ingredient.objects.all().order_by('name')
+    return render(request, 'management/ingredients_list.html', {'ingredients': ingredients})
+
+
+@admin_required
+def management_ingredient_create(request):
+    form = IngredientManagementForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Ingredient created.')
+        return redirect('management_ingredients')
+    return render(request, 'management/ingredient_form.html', {'form': form, 'title': 'Create Ingredient'})
+
+
+@admin_required
+def management_ingredient_edit(request, pk):
+    ingredient = get_object_or_404(Ingredient, pk=pk)
+    form = IngredientManagementForm(request.POST or None, instance=ingredient)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Ingredient updated.')
+        return redirect('management_ingredients')
+    return render(request, 'management/ingredient_form.html', {'form': form, 'title': 'Edit Ingredient'})
+
+
+@admin_required
+def management_ingredient_delete(request, pk):
+    ingredient = get_object_or_404(Ingredient, pk=pk)
+    if request.method == 'POST':
+        ingredient.delete()
+        messages.success(request, 'Ingredient deleted.')
+        return redirect('management_ingredients')
+    return render(request, 'management/confirm_delete.html', {'object': ingredient, 'type': 'Ingredient'})
+
+
+# Station-Ingredient assignment
+@admin_required
+def management_station_ingredients(request):
+    from .models import Station, StationIngredient
+    form = StationAssignmentForm(request.POST or None)
+    selected_station = None
+    assigned_ids = []
+    if request.method == 'POST' and form.is_valid():
+        selected_station = form.cleaned_data['station']
+        selected_ingredients = form.cleaned_data['ingredients']
+        # Replace existing assignments
+        StationIngredient.objects.filter(station=selected_station).delete()
+        StationIngredient.objects.bulk_create([
+            StationIngredient(station=selected_station, ingredient=ing)
+            for ing in selected_ingredients
+        ])
+        messages.success(request, 'Assignments updated.')
+    elif request.method == 'POST':
+        messages.error(request, 'Please fix the errors below.')
+
+    # If station selected (on GET with ?station=ID or after POST), preload selections
+    if request.method == 'GET':
+        station_id = request.GET.get('station')
+        if station_id:
+            try:
+                selected_station = Station.objects.get(pk=station_id)
+                form.fields['station'].initial = selected_station
+            except Station.DoesNotExist:
+                selected_station = None
+    if selected_station:
+        assigned_ids = list(StationIngredient.objects.filter(station=selected_station).values_list('ingredient_id', flat=True))
+        form.fields['ingredients'].initial = assigned_ids
+
+    return render(request, 'management/station_ingredients.html', {
+        'form': form,
+        'selected_station': selected_station,
+    })
+
 @login_required
 def dashboard(request):
-    # Get ingredient orders - show all orders to all station users and staff
-    if request.user.is_staff_role() or request.user.is_orderer() or request.user.is_salad_bar_role() or request.user.is_sandwich_role() or request.user.is_hot_station_role():
-        # All these roles can see all orders - optimize with select_related
-        ingredient_orders = IngredientOrder.objects.select_related('orderer').all().order_by('-created_at')
+    # Ingredient orders visibility aligned with service permissions
+    if OrderService.user_can_view_ingredient_order(request.user):
+        ingredient_orders = (
+            IngredientOrder.objects.select_related('orderer')
+            .all()
+            .order_by('-created_at')
+        )
     else:
         ingredient_orders = IngredientOrder.objects.none()
 
-    # Get shopping orders - only staff, admin, and users with permission can see these
-    if request.user.is_staff_role() or request.user.is_admin_role() or request.user.can_create_shopping_orders():
-        shopping_orders = ShoppingOrder.objects.select_related('chef').all().order_by('-created_at')
+    # Shopping orders visibility aligned with service permissions
+    if OrderService.user_can_view_shopping_order(request.user):
+        shopping_orders = (
+            ShoppingOrder.objects.select_related('chef').all().order_by('-created_at')
+        )
     else:
         shopping_orders = ShoppingOrder.objects.none()
 
@@ -64,11 +306,15 @@ def create_ingredient_order(request):
                     })
             
             # Create order using service
-            OrderService.create_ingredient_order(
+            order = OrderService.create_ingredient_order(
                 user=request.user,
                 notes=form.cleaned_data['notes'],
                 items_data=items_data
             )
+            # Attach station and location
+            order.station = form.cleaned_data['station']
+            order.location = request.user.location or ''
+            order.save()
             
             messages.success(request, 'Ingredient order submitted successfully!')
             return redirect('dashboard')
@@ -84,9 +330,6 @@ def create_ingredient_order(request):
 
 @login_required
 def create_shopping_order(request):
-    # Debug print to help diagnose permission issues
-    print(f"User: {request.user.username}, Can create orders: {request.user.can_create_shopping_orders()}")
-    
     if not ShoppingService.user_can_create_shopping_order(request.user):
         messages.error(request, "You don't have permission to create shopping orders.")
         return redirect('dashboard')
@@ -123,7 +366,7 @@ def create_shopping_order(request):
     context = {
         'form': form,
         'item_form': ShoppingOrderItemForm(),
-        'ingredients': Ingredient.objects.all()
+        'ingredients': ShoppingIngredient.objects.all()
     }
     return render(request, 'orders/create_shopping_order.html', context)
 
@@ -256,34 +499,7 @@ def edit_ingredient_order(request, order_id):
     }
     return render(request, 'orders/edit_ingredient_order.html', context)
 
-@login_required
-def ingredient_order_details(request, order_id):
-    order = get_object_or_404(IngredientOrder, id=order_id)
     
-    # Check if user has permission to view this order
-    if not (request.user.is_staff_role or order.created_by == request.user):
-        messages.error(request, "You don't have permission to view this order.")
-        return redirect('dashboard')
-    
-    # For staff users, group items by station
-    items_by_station = {}
-    if request.user.is_staff_role:
-        for item in order.items.all():
-            station = item.ingredient.station
-            if station not in items_by_station:
-                items_by_station[station] = []
-            items_by_station[station].append({
-                'ingredient': item.ingredient,
-                'quantity': item.quantity,
-                'unit': item.ingredient.unit,
-                'order_id': item.order.id
-            })
-    
-    context = {
-        'order': order,
-        'items_by_station': items_by_station
-    }
-    return render(request, 'orders/ingredient_order_details.html', context)
 
 @login_required
 def edit_ingredient_order_item(request, order_id, item_id):
@@ -342,8 +558,14 @@ def add_ingredient_to_order(request, order_id, station):
             return redirect('view_order_details', order_type='ingredient', order_id=order_id)
     else:
         form = IngredientOrderItemForm()
+        # Prefer StationIngredient mapping; fallback to legacy Ingredient.station
         if station != 'Unassigned':
-            form.fields['ingredient'].queryset = Ingredient.objects.filter(station=station)
+            try:
+                from .models import Station
+                station_obj = Station.objects.get(name=station)
+                form.fields['ingredient'].queryset = Ingredient.objects.filter(station_links__station=station_obj).distinct()
+            except Station.DoesNotExist:
+                form.fields['ingredient'].queryset = Ingredient.objects.filter(station=station)
     
     context = {
         'form': form,

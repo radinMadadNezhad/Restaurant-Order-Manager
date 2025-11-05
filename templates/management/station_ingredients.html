@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Station ↔ Ingredients{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Assign Ingredients to Station</h1>
+  <a href="{% url 'management_home' %}" class="btn btn-sm btn-secondary">Back</a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post" class="mb-3">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-4">{{ form.station|as_crispy_field }}</div>
+        <div class="col-md-8">{{ form.ingredients|as_crispy_field }}</div>
+      </div>
+      <button type="submit" class="btn btn-primary mt-2">Save Assignments</button>
+    </form>
+    {% if selected_station %}
+      <div class="text-muted small">Editing station: <strong>{{ selected_station.name }}</strong></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

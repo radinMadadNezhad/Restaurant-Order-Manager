@@ -198,9 +198,15 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000',
 ]
 
-# Session and cookie settings for Railway deployment
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
+# Contact / Email settings
+# Admin email to receive contact form notifications
+ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', os.environ.get('DEFAULT_ADMIN_EMAIL', 'admin@example.com'))
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@localhost')
+
+# Session and cookie settings
+# Secure cookies should be enabled in production, but disabled in local dev
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Production optimization settings
