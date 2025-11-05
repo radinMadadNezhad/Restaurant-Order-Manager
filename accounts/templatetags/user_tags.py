@@ -24,18 +24,18 @@ def is_orderer(user):
 
 @register.filter
 def is_salad_bar_role(user):
-    """Template filter to check if a user has salad bar role"""
-    return user.is_salad_bar_role()
+    """Deprecated: station roles removed."""
+    return False
 
 @register.filter 
 def is_sandwich_role(user):
-    """Template filter to check if a user has sandwich role"""
-    return user.is_sandwich_role()
+    """Deprecated: station roles removed."""
+    return False
 
 @register.filter
 def is_hot_station_role(user):
-    """Template filter to check if a user has hot station role"""
-    return user.is_hot_station_role()
+    """Deprecated: station roles removed."""
+    return False
 
 # New permissions based template tags
 @register.filter
@@ -60,15 +60,21 @@ def can_view_shopping_order(user):
 @register.filter
 def can_order_ingredients(user):
     """Check if user has permission to order ingredients"""
-    return user.has_perm('accounts.order_ingredients') or user.is_orderer()
+    return (
+        user.has_perm('accounts.order_ingredients')
+        or user.is_orderer()
+    )
 
 @register.filter
 def can_view_ingredient_order(user):
     """Check if user has permission to view ingredient orders"""
-    return (user.has_perm('accounts.view_ingredient_order') or
-            user.has_perm('accounts.admin_full_access') or
-            user.has_perm('accounts.order_ingredients') or
-            user.is_orderer() or user.is_staff_role())
+    return (
+        user.has_perm('accounts.view_ingredient_order')
+        or user.has_perm('accounts.admin_full_access')
+        or user.has_perm('accounts.order_ingredients')
+        or user.is_orderer()
+        or user.is_staff_role()
+    )
 
 @register.filter
 def can_process_orders(user):

@@ -10,7 +10,7 @@
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{% url 'dashboard' %}">Restaurant Management</a>
@@ -23,8 +23,8 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
                         </li>
-                        <!-- For station users who can submit ingredient orders -->
-                        {% if user|is_orderer or user|is_salad_bar_role or user|is_sandwich_role or user|is_hot_station_role %}
+                        <!-- Users who can create ingredient orders -->
+                        {% if user|can_order_ingredients %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'create_ingredient_order' %}">New Ingredient Order</a>
                             </li>
@@ -36,6 +36,14 @@
                             </li>
                         {% endif %}
                     {% endif %}
+                    {% if user.is_authenticated and user|has_admin_full_access %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'management_home' %}">Management</a>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'contact' %}">Contact Us</a>
+                    </li>
                 </ul>
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}

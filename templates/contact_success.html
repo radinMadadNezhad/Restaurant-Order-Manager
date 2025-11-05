@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block title %}Thank You{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <div class="alert alert-success">
+      <h4 class="alert-heading">Thank you!</h4>
+      <p>Your message has been sent. We’ll get back to you soon.</p>
+      <hr>
+      <a href="{% url 'home' %}" class="btn btn-primary">Back to Home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

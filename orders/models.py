@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from django.core.validators import MinValueValidator
+from decimal import Decimal
 
 class Ingredient(models.Model):
     name = models.CharField(max_length=100)
@@ -9,6 +11,27 @@ class Ingredient(models.Model):
     
     def __str__(self):
         return self.name
+
+
+class Station(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class StationIngredient(models.Model):
+    station = models.ForeignKey(Station, on_delete=models.CASCADE, related_name='station_ingredients')
+    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE, related_name='station_links')
+
+    class Meta:
+        unique_together = ('station', 'ingredient')
+
+    def __str__(self):
+        return f"{self.station.name} ↔ {self.ingredient.name}"
 
 class IngredientOrder(models.Model):
     class Status(models.TextChoices):
@@ -22,6 +45,9 @@ class IngredientOrder(models.Model):
         on_delete=models.CASCADE,
         related_name='ingredient_orders'
     )
+    # New fields: link order to a station and tag with user's location
+    station = models.ForeignKey('Station', on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
+    location = models.CharField(max_length=100, blank=True)
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -32,23 +58,9 @@ class IngredientOrder(models.Model):
     notes = models.TextField(blank=True, null=True)
 
     def get_items_by_station(self):
-        """Group order items by the station of the user who added them"""
-        result = {}
-        
-        for item in self.items.all():
-            # Get the station name of the user who added the item
-            if not item.added_by:
-                # For legacy items with no added_by
-                station_name = self.orderer.get_station_name()
-            else:
-                station_name = item.added_by.get_station_name()
-            
-            if station_name not in result:
-                result[station_name] = []
-            
-            result[station_name].append(item)
-            
-        return result
+        """Return items grouped under the selected station (compat with legacy)."""
+        station_name = self.station.name if self.station else 'Unassigned'
+        return {station_name: list(self.items.all())}
         
     def __str__(self):
         return f"Ingredient Order #{self.id} - {self.orderer.username}"
@@ -63,7 +75,7 @@ class IngredientOrderItem(models.Model):
         Ingredient,
         on_delete=models.CASCADE
     )
-    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     added_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -123,9 +135,20 @@ class ShoppingIngredient(models.Model):
 class ShoppingOrderItem(models.Model):
     order = models.ForeignKey('ShoppingOrder', related_name='items', on_delete=models.CASCADE)
     ingredient = models.ForeignKey(ShoppingIngredient, on_delete=models.CASCADE)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return f"{self.quantity} {self.ingredient.unit} of {self.ingredient.name}"
+
+
+class ContactMessage(models.Model):
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.subject} from {self.name} <{self.email}>"
