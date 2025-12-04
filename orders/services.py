@@ -7,7 +7,13 @@ class OrderService:
     @staticmethod
     def user_can_create_ingredient_order(user):
         """Check if user has permission to create ingredient orders"""
-        return user.is_orderer() or user.has_perm('accounts.order_ingredients')
+        return (
+            user.is_orderer()
+            or user.is_admin_role()
+            or user.is_staff_role()
+            or user.has_perm('accounts.order_ingredients')
+            or user.has_perm('accounts.admin_full_access')
+        )
     
     @staticmethod
     def user_can_create_shopping_order(user):

@@ -31,7 +31,7 @@ class StationIngredient(models.Model):
         unique_together = ('station', 'ingredient')
 
     def __str__(self):
-        return f"{self.station.name} ↔ {self.ingredient.name}"
+        return f"{self.station.name} + {self.ingredient.name}"
 
 class IngredientOrder(models.Model):
     class Status(models.TextChoices):

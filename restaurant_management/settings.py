@@ -26,12 +26,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-your-secret-key-here')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY and not os.environ.get('ALLOW_INSECURE_SECRET_KEY', '').lower() == 'true':
+    raise RuntimeError("SECRET_KEY must be set. Add ALLOW_INSECURE_SECRET_KEY=true to bypass for local dev.")
+SECRET_KEY = SECRET_KEY or 'dev-placeholder-secret-key'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    ".tunels.tech",
+]
+
 
 
 # Application definition
@@ -47,6 +55,7 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_bootstrap4',
     'widget_tweaks',
+    'django_extensions',
     # Local apps
     'accounts',
     'orders',
@@ -93,7 +102,13 @@ WSGI_APPLICATION = 'restaurant_management.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 # Use SQLite for local development
-if DEBUG:
+USE_SQLITE_FALLBACK = os.environ.get('USE_SQLITE_FALLBACK', 'False').lower() == 'true'
+DATABASE_URL = os.environ.get('DATABASE_URL')
+DATABASE_URL_IS_PLACEHOLDER = DATABASE_URL and (
+    '<YOUR_DB' in DATABASE_URL or 'postgresql://<YOUR_DB_USER>' in DATABASE_URL
+)
+
+if DEBUG or USE_SQLITE_FALLBACK or DATABASE_URL_IS_PLACEHOLDER:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -103,9 +118,8 @@ if DEBUG:
 else:
     # Use PostgreSQL in production
     # Override database configuration with PostgreSQL if DATABASE_URL is set
-    database_url = os.environ.get('DATABASE_URL')
-    if database_url:
-        DATABASES = {'default': dj_database_url.parse(database_url)}
+    if DATABASE_URL:
+        DATABASES = {'default': dj_database_url.parse(DATABASE_URL)}
     else:
         # Fallback configuration
         postgres_db = os.environ.get('POSTGRES_DB', 'restaurant_db')
@@ -164,8 +178,11 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-# Enable WhiteNoise compression and caching support
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Enable WhiteNoise compression and caching support (manifest in prod, simple in dev)
+if DEBUG:
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+else:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
 MEDIA_URL = '/media/'
@@ -193,9 +210,10 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # CSRF Settings
 CSRF_TRUSTED_ORIGINS = [
-    'https://restaurant-order-manager-production.up.railway.app',
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
+    origin.strip() for origin in os.environ.get(
+        'CSRF_TRUSTED_ORIGINS',
+        'https://restaurant-order-manager-production.up.railway.app,http://localhost:8000,http://127.0.0.1:8000'
+    ).split(',') if origin.strip()
 ]
 
 # Contact / Email settings
@@ -218,14 +236,25 @@ if not DEBUG:
     LOGGING = {
         'version': 1,
         'disable_existing_loggers': False,
+        'formatters': {
+            'structured': {
+                'format': '{levelname} {asctime} {name} {message}',
+                'style': '{',
+            },
+        },
         'handlers': {
             'console': {
                 'class': 'logging.StreamHandler',
+                'formatter': 'structured',
             },
+        },
+        'loggers': {
+            'django.request': {'handlers': ['console'], 'level': 'ERROR', 'propagate': False},
+            'django.security': {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
         },
         'root': {
             'handlers': ['console'],
-            'level': 'WARNING',
+            'level': 'INFO',
         },
     }
     
@@ -246,3 +275,12 @@ else:
 # Update security for forms
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Changed to False for better UX
+
+# Hardened security defaults
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+SECURE_REFERRER_POLICY = "same-origin"
+SECURE_SSL_REDIRECT = not DEBUG
+SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG

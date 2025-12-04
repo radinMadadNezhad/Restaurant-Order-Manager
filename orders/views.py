@@ -48,7 +48,7 @@ def contact(request):
                     ),
                     from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@localhost'),
                     recipient_list=[admin_email],
-                    fail_silently=True,
+                    fail_silently=settings.DEBUG,
                 )
             return redirect('contact_success')
     else:
