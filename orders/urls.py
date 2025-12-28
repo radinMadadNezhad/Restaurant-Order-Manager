@@ -16,6 +16,8 @@ urlpatterns = [
     path('shopping-order/create/', views.create_shopping_order, name='create_shopping_order'),
     path('shopping-order/<int:order_id>/confirm/', views.confirm_shopping_order, name='confirm_shopping_order'),
     path('shopping-order/<int:order_id>/complete/', views.complete_shopping_order, name='complete_shopping_order'),
+    path('ingredient-order/<int:order_id>/delete/', views.delete_ingredient_order, name='delete_ingredient_order'),
+    path('shopping-order/<int:order_id>/delete/', views.delete_shopping_order, name='delete_shopping_order'),
     # Management dashboard
     path('management/', views.management_home, name='management_home'),
     # Users CRUD
@@ -35,4 +37,6 @@ urlpatterns = [
     path('management/ingredients/<int:pk>/delete/', views.management_ingredient_delete, name='management_ingredient_delete'),
     # Station-Ingredient assignments
     path('management/station-ingredients/', views.management_station_ingredients, name='management_station_ingredients'),
+    path('ingredients/new/', views.ingredient_create_view, name='ingredient_create'),
+    path('shopping-ingredients/new/', views.shopping_ingredient_create_view, name='shopping_ingredient_create'),
 ] 

@@ -38,6 +38,7 @@ class IngredientOrder(models.Model):
         PENDING = 'PENDING', 'Pending'
         IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
         COMPLETED = 'COMPLETED', 'Completed'
+        PROCESSED = 'PROCESSED', 'Processed'
         CANCELLED = 'CANCELLED', 'Cancelled'
 
     orderer = models.ForeignKey(
@@ -55,6 +56,15 @@ class IngredientOrder(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    processed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="processed_orders"
+    )
+    processed_at = models.DateTimeField(null=True, blank=True)
+    order_title = models.CharField(max_length=100, blank=True, default='')
     notes = models.TextField(blank=True, null=True)
 
     def get_items_by_station(self):

@@ -6,6 +6,7 @@ from .models import (
     IngredientOrderItem,
     ShoppingOrder,
     ShoppingOrderItem,
+    ShoppingIngredient,
     Station,
 )
 
@@ -14,7 +15,7 @@ class IngredientOrderForm(forms.ModelForm):
 
     class Meta:
         model = IngredientOrder
-        fields = ['station', 'notes']
+        fields = ['order_title', 'station', 'location', 'notes']
 
 class IngredientOrderItemForm(forms.ModelForm):
     quantity = forms.DecimalField(min_value=Decimal('0.01'))
@@ -79,6 +80,12 @@ class IngredientManagementForm(forms.ModelForm):
     class Meta:
         model = Ingredient
         fields = ['name', 'unit']
+
+
+class ShoppingIngredientForm(forms.ModelForm):
+    class Meta:
+        model = ShoppingIngredient
+        fields = ['name', 'unit', 'description']
 
 
 class StationAssignmentForm(forms.Form):

@@ -22,6 +22,8 @@ from .forms import (
     ShoppingOrderItemForm,
     IngredientForm,
     ContactForm,
+    ShoppingIngredientForm,
+    IngredientManagementForm,
 )
 from .services import OrderService, ShoppingService
 
@@ -311,9 +313,11 @@ def create_ingredient_order(request):
                 notes=form.cleaned_data['notes'],
                 items_data=items_data
             )
-            # Attach station and location
+            # Attach station, location, and title
             order.station = form.cleaned_data['station']
-            order.location = request.user.location or ''
+            order.order_title = form.cleaned_data.get('order_title', '')
+            # Use form location if provided, else fallback to user location
+            order.location = form.cleaned_data.get('location') or request.user.location or ''
             order.save()
             
             messages.success(request, 'Ingredient order submitted successfully!')
@@ -391,16 +395,18 @@ def process_ingredient_order(request, order_id):
         messages.error(request, "You don't have permission to process ingredient orders.")
         return redirect('dashboard')
     
-    order = get_object_or_404(IngredientOrder, id=order_id, status='PENDING')
+    order = get_object_or_404(IngredientOrder, id=order_id)
     
     if request.method == 'POST':
-        action = request.POST.get('action')
-        OrderService.process_ingredient_order(order, action)
+        action = request.POST.get('action', 'process')
+        OrderService.process_ingredient_order(order, action, user=request.user)
         
         if action == 'start':
             messages.info(request, 'Order marked as in progress.')
         elif action == 'complete':
             messages.success(request, 'Order marked as completed!')
+        elif action == 'process':
+            messages.success(request, 'Order marked as processed!')
         
         return redirect('dashboard')
     
@@ -474,7 +480,19 @@ def edit_ingredient_order(request, order_id):
                         'quantity': quantity
                     })
             
-            # Update order using service
+            # Update additional fields manually before saving via service or after
+            # Service updates notes and items. We need to update title, station, location.
+            order.order_title = form.cleaned_data['order_title']
+            order.station = form.cleaned_data['station']
+            # Use form location if provided, else keep existing or user location
+            location = form.cleaned_data.get('location')
+            if location:
+                order.location = location
+            elif not order.location and request.user.location:
+                order.location = request.user.location
+            order.save()
+
+            # Update order using service (handles notes and items)
             OrderService.update_ingredient_order(
                 order=order,
                 notes=form.cleaned_data['notes'],
@@ -573,3 +591,42 @@ def add_ingredient_to_order(request, order_id, station):
         'station': station
     }
     return render(request, 'orders/add_ingredient_to_order.html', context)
+
+
+@admin_required
+def ingredient_create_view(request):
+    form = IngredientManagementForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Ingredient created.')
+        return redirect('management_ingredients')
+    return render(request, 'orders/ingredient_form_admin.html', {'form': form, 'title': 'Create Ingredient'})
+
+@admin_required
+def shopping_ingredient_create_view(request):
+    form = ShoppingIngredientForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Shopping Ingredient created.')
+        return redirect('management_ingredients')
+    return render(request, 'orders/shopping_ingredient_form_admin.html', {'form': form, 'title': 'Create Shopping Ingredient'})
+
+
+@admin_required
+def delete_ingredient_order(request, order_id):
+    order = get_object_or_404(IngredientOrder, id=order_id)
+    if request.method == 'POST':
+        order.delete()
+        messages.success(request, 'Ingredient Order deleted successfully.')
+        return redirect('dashboard')
+    return render(request, 'orders/confirm_delete_order.html', {'order': order, 'type': 'Ingredient Order'})
+
+
+@admin_required
+def delete_shopping_order(request, order_id):
+    order = get_object_or_404(ShoppingOrder, id=order_id)
+    if request.method == 'POST':
+        order.delete()
+        messages.success(request, 'Shopping Order deleted successfully.')
+        return redirect('dashboard')
+    return render(request, 'orders/confirm_delete_order.html', {'order': order, 'type': 'Shopping Order'})

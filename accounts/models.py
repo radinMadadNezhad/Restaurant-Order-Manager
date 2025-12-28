@@ -53,7 +53,7 @@ class CustomUser(AbstractUser):
         is_admin = self.is_admin_role()
         has_perm = self.can_submit_shopping_orders
         has_permission = self.has_perm('accounts.submit_shopping_order')
-        return is_staff or is_admin or has_perm or has_permission
+        return is_staff or is_admin or has_perm or has_permission or self.is_orderer()
 
     def get_station_name(self):
         """Deprecated: station is now selected per order."""

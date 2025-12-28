@@ -10,7 +10,6 @@ class OrderService:
         return (
             user.is_orderer()
             or user.is_admin_role()
-            or user.is_staff_role()
             or user.has_perm('accounts.order_ingredients')
             or user.has_perm('accounts.admin_full_access')
         )
@@ -102,12 +101,17 @@ class OrderService:
             return order
     
     @staticmethod
-    def process_ingredient_order(order, action):
+    def process_ingredient_order(order, action, user=None):
         """Process an ingredient order based on the action"""
         if action == 'start':
             order.status = order.Status.IN_PROGRESS
         elif action == 'complete':
             order.status = order.Status.COMPLETED
+        elif action == 'process':
+            order.status = order.Status.PROCESSED
+            if user:
+                order.processed_by = user
+                order.processed_at = timezone.now()
         order.save()
         return order
     

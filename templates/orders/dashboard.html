@@ -41,12 +41,17 @@
                         <div class="list-group-item">
                             <div class="d-flex w-100 justify-content-between align-items-start">
                                 <h5 class="mb-1">
-                                    <a href="{% url 'view_order_details' order_type='ingredient' order_id=order.id %}">Order #{{ order.id }}</a>
+                                    <a href="{% url 'view_order_details' order_type='ingredient' order_id=order.id %}">
+                                        {% if order.order_title %}{{ order.order_title }}{% else %}Order #{{ order.id }}{% endif %}
+                                    </a>
                                 </h5>
                                 <small class="text-muted">{{ order.created_at|date:"Y-m-d H:i" }}</small>
                             </div>
                             <p class="mb-1">Status: {{ order.get_status_display }}</p>
                             <p class="mb-1">Ordered by: {{ order.orderer.username }}</p>
+                            {% if order.location %}
+                            <p class="mb-1">Location: {{ order.location }}</p>
+                            {% endif %}
                         </div>
                         {% empty %}
                         <div class="list-group-item">
