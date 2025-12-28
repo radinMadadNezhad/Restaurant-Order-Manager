@@ -16,6 +16,7 @@ urlpatterns = [
     path('shopping-order/create/', views.create_shopping_order, name='create_shopping_order'),
     path('shopping-order/<int:order_id>/confirm/', views.confirm_shopping_order, name='confirm_shopping_order'),
     path('shopping-order/<int:order_id>/complete/', views.complete_shopping_order, name='complete_shopping_order'),
+    path('shopping-order/<int:order_id>/receive/', views.receive_shopping_order, name='receive_shopping_order'),
     path('ingredient-order/<int:order_id>/delete/', views.delete_ingredient_order, name='delete_ingredient_order'),
     path('shopping-order/<int:order_id>/delete/', views.delete_shopping_order, name='delete_shopping_order'),
     # Management dashboard

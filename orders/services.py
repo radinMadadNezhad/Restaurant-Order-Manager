@@ -181,8 +181,60 @@ class ShoppingService:
         return order
     
     @staticmethod
-    def complete_shopping_order(order):
-        """Mark a shopping order as complete"""
-        order.status = order.Status.COMPLETED
-        order.save()
+    def complete_shopping_order(order, items_data=None):
+        """
+        Mark a shopping order as complete.
+        If items_data is provided (list of dicts with id and quantity_received),
+        update the items and create a backorder for missing quantities.
+        """
+        from .models import ShoppingOrder, ShoppingOrderItem
+
+        if not items_data:
+            # Legacy behavior: just mark complete
+            order.status = order.Status.COMPLETED
+            order.save()
+            return order
+
+        missing_items = []
+
+        with transaction.atomic():
+            # 1. Update received quantities
+            for data in items_data:
+                item = ShoppingOrderItem.objects.get(id=data['item_id'], order=order)
+                received = data['quantity_received']
+                item.quantity_received = received
+                item.save()
+
+                # Calculate missing
+                if received < item.quantity:
+                    missing_qty = item.quantity - received
+                    if missing_qty > 0:
+                        missing_items.append({
+                            'ingredient': item.ingredient,
+                            'quantity': missing_qty,
+                            'notes': f"Backorder from Order #{order.id}"
+                        })
+
+            # 2. Create Backorder if needed
+            if missing_items:
+                backorder = ShoppingOrder.objects.create(
+                    chef=order.chef,  # Assign to original creator
+                    notes=f"Backorder for Order #{order.id}",
+                    status=ShoppingOrder.Status.SUBMITTED # Using SUBMITTED so it shows up for confirmation/purchasing immediately
+                )
+                # backorder.status = ShoppingOrder.Status.SUBMITTED # Already set above
+                # backorder.save()
+
+                for missing in missing_items:
+                    ShoppingOrderItem.objects.create(
+                        order=backorder,
+                        ingredient=missing['ingredient'],
+                        quantity=missing['quantity'],
+                        notes=missing['notes']
+                    )
+
+            # 3. Mark original as complete
+            order.status = order.Status.COMPLETED
+            order.save()
+
         return order 

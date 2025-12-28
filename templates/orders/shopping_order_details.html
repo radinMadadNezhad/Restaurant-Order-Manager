@@ -16,11 +16,12 @@
                         </div>
                         <div>
                             <a href="{% url 'dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
-                            {% if user.is_staff_role and order.status == 'CONFIRMED' %}
-                            <form method="post" action="{% url 'complete_shopping_order' order.id %}" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-success ms-2">Mark as Complete</button>
-                            </form>
+                            {% if order.status == 'CONFIRMED' %}
+                                {% if user.is_staff_role or user.is_admin_role or user.is_superuser %}
+                                <a href="{% url 'receive_shopping_order' order.id %}" class="btn btn-success ms-2">
+                                    <i class="fas fa-edit me-1"></i> Receive Order
+                                </a>
+                                {% endif %}
                             {% endif %}
                             {% if user.is_admin_role or user.is_superuser %}
                             <a href="{% url 'delete_shopping_order' order.id %}" class="btn btn-danger ms-2">Delete
@@ -42,6 +43,9 @@
                             <th>Ingredient</th>
                             <th>Quantity</th>
                             <th>Unit</th>
+                            {% if order.status == 'COMPLETED' %}
+                            <th>Received</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -50,6 +54,18 @@
                             <td>{{ item.ingredient.name }}</td>
                             <td>{{ item.quantity }}</td>
                             <td>{{ item.ingredient.unit }}</td>
+                            {% if order.status == 'COMPLETED' %}
+                            <td>
+                                {% if item.quantity_received is not None %}
+                                <span
+                                    class="{% if item.quantity_received < item.quantity %}text-danger fw-bold{% else %}text-success{% endif %}">
+                                    {{ item.quantity_received }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>

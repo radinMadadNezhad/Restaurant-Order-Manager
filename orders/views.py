@@ -6,6 +6,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
+from decimal import Decimal
 from .models import (
     Ingredient,
     IngredientOrder,
@@ -451,8 +452,24 @@ def complete_shopping_order(request, order_id):
             messages.error(request, "Only confirmed orders can be marked as complete.")
             return redirect('view_order_details', order_type='shopping', order_id=order.id)
         
-        ShoppingService.complete_shopping_order(order)
-        messages.success(request, f"Shopping Order #{order.id} has been marked as complete.")
+        # Check if we are doing a simple complete or a receive
+        if request.POST.get('action') == 'receive_order':
+            items_data = []
+            items = order.items.all()
+            for i, item in enumerate(items):
+                key = f'quantity_received_{item.id}'
+                received = request.POST.get(key)
+                if received:
+                    items_data.append({
+                        'item_id': item.id,
+                        'quantity_received': Decimal(received)
+                    })
+            
+            ShoppingService.complete_shopping_order(order, items_data)
+            messages.success(request, f"Shopping Order #{order.id} processed (Backorders created if needed).")
+        else:
+            ShoppingService.complete_shopping_order(order)
+            messages.success(request, f"Shopping Order #{order.id} has been marked as complete.")
     
     return redirect('dashboard')
 
@@ -601,6 +618,21 @@ def ingredient_create_view(request):
         messages.success(request, 'Ingredient created.')
         return redirect('management_ingredients')
     return render(request, 'orders/ingredient_form_admin.html', {'form': form, 'title': 'Create Ingredient'})
+
+@login_required
+def receive_shopping_order(request, order_id):
+    order = get_object_or_404(ShoppingOrder, id=order_id)
+    
+    if not OrderService.user_can_view_shopping_order(request.user):
+        messages.error(request, "You don't have permission to receive this order.")
+        return redirect('dashboard')
+        
+    if order.status != 'CONFIRMED':
+        messages.warning(request, "Only confirmed orders can be received.")
+        return redirect('view_order_details', order_type='shopping', order_id=order.id)
+
+    return render(request, 'orders/receive_shopping_order.html', {'order': order})
+
 
 @admin_required
 def shopping_ingredient_create_view(request):

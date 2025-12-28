@@ -146,6 +146,7 @@ class ShoppingOrderItem(models.Model):
     order = models.ForeignKey('ShoppingOrder', related_name='items', on_delete=models.CASCADE)
     ingredient = models.ForeignKey(ShoppingIngredient, on_delete=models.CASCADE)
     quantity = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    quantity_received = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0.00'))])
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
