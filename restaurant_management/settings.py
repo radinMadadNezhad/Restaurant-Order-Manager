@@ -108,7 +108,8 @@ DATABASE_URL_IS_PLACEHOLDER = DATABASE_URL and (
     '<YOUR_DB' in DATABASE_URL or 'postgresql://<YOUR_DB_USER>' in DATABASE_URL
 )
 
-if DEBUG or USE_SQLITE_FALLBACK or DATABASE_URL_IS_PLACEHOLDER:
+# Only use SQLite if explicitly requested or if no valid Database URL is present
+if USE_SQLITE_FALLBACK or DATABASE_URL_IS_PLACEHOLDER:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
