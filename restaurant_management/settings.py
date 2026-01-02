@@ -63,7 +63,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'restaurant_management.middleware.ErrorLoggingMiddleware',  # Our custom error middleware
+    #'restaurant_management.middleware.ErrorLoggingMiddleware',  # Our custom error middleware
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -176,8 +176,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    BASE_DIR / "static"
+] if (BASE_DIR / "static").exists() else []
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Enable WhiteNoise compression and caching support (manifest in prod, simple in dev)
@@ -208,15 +210,13 @@ LOGIN_URL = 'login'
 
 # Session settings
 SESSION_COOKIE_AGE = 86400  # 24 hours in seconds
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # CSRF Settings
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip() for origin in os.environ.get(
-        'CSRF_TRUSTED_ORIGINS',
-        'https://restaurant-order-manager-production.up.railway.app,http://localhost:8000,http://127.0.0.1:8000'
-    ).split(',') if origin.strip()
-]
+CSRF_TRUSTED_ORIGINS = os.environ.get(
+    "CSRF_TRUSTED_ORIGINS",
+    "https://*.vercel.app,http://localhost:8000,http://127.0.0.1:8000"
+).split(",")
+
 
 # Contact / Email settings
 # Admin email to receive contact form notifications
