@@ -4,24 +4,21 @@
 {% block title %}Login{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-6 offset-md-3">
-        <div class="card">
-            <div class="card-header">
-                <h2 class="h5 mb-0">Login</h2>
-                <div class="alert alert-info mt-2">
-                    <strong>Need an account?</strong> Please ask your manager to create one. Administrators can manage users in <a href="/admin" class="alert-link">Django Admin</a>.<br>
-                    <strong>Forgot your password?</strong> Contact your manager or admin for a reset.
-                </div>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    {{ form|crispy }}
-                    <button type="submit" class="btn btn-primary">Login</button>
-                </form>
-            </div>
+<div class="auth-page">
+    <div class="auth-card">
+        <h2>Welcome Back</h2>
+        <p class="auth-subtitle">Sign in to manage your restaurant operations</p>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <button type="submit" class="btn btn-accent w-100">Login</button>
+        </form>
+
+        <div class="auth-help-text">
+            <p class="mb-2"><strong>Need an account?</strong> Contact your manager to create one.</p>
+            <p class="mb-0"><strong>Forgot password?</strong> Ask your administrator for a reset.</p>
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

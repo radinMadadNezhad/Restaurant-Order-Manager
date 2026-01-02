@@ -9,6 +9,7 @@
         border-bottom: 1px solid #dee2e6;
         padding: 1rem 0;
     }
+
     .ingredient-item:last-child {
         border-bottom: none;
     }
@@ -17,35 +18,44 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-8 offset-md-2">
+    <div class="col-lg-8 offset-lg-2">
         <div class="card">
             <div class="card-header">
-                <h2 class="h5 mb-0">New Ingredient Order</h2>
+                <h2 class="h4 mb-0">New Ingredient Order</h2>
             </div>
             <div class="card-body">
                 <form method="post" id="orderForm">
                     {% csrf_token %}
-                    {{ form|crispy }}
 
-                    <div id="ingredients-container">
-                        <h4 class="mb-3">Order Items</h4>
-                        <div class="ingredient-item">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    {{ item_form.ingredient|as_crispy_field }}
-                                </div>
-                                <div class="col-md-4">
-                                    {{ item_form.quantity|as_crispy_field }}
-                                </div>
-                                <div class="col-md-2">
-                                    <button type="button" class="btn btn-danger remove-item" style="display: none;">Remove</button>
+                    <div class="form-section">
+                        <h3 class="form-section-title">Order Information</h3>
+                        {{ form|crispy }}
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="form-section-title">Order Items</h3>
+                        <div id="ingredients-container">
+                            <div class="ingredient-item">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        {{ item_form.ingredient|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        {{ item_form.quantity|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        <button type="button" class="btn btn-danger btn-sm remove-item mb-3"
+                                            style="display: none;">Remove</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <button type="button" class="btn btn-secondary mt-3" id="addItem">Add Another Item</button>
-                    <button type="submit" class="btn btn-primary mt-3">Submit Order</button>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="addItem">Add Another Item</button>
+                        <button type="submit" class="btn btn-accent">Submit Order</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -55,38 +65,38 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('ingredients-container');
-    const addButton = document.getElementById('addItem');
-    const template = container.querySelector('.ingredient-item').cloneNode(true);
-    
-    // Show remove button if there's more than one item
-    function updateRemoveButtons() {
-        const items = container.querySelectorAll('.ingredient-item');
-        items.forEach(item => {
-            const removeBtn = item.querySelector('.remove-item');
-            removeBtn.style.display = items.length > 1 ? 'block' : 'none';
-        });
-    }
+    document.addEventListener('DOMContentLoaded', function () {
+        const container = document.getElementById('ingredients-container');
+        const addButton = document.getElementById('addItem');
+        const template = container.querySelector('.ingredient-item').cloneNode(true);
 
-    // Add new item
-    addButton.addEventListener('click', function() {
-        const newItem = template.cloneNode(true);
-        // Clear values
-        newItem.querySelectorAll('input, select').forEach(input => {
-            input.value = '';
-        });
-        container.appendChild(newItem);
-        updateRemoveButtons();
-    });
-
-    // Remove item
-    container.addEventListener('click', function(e) {
-        if (e.target.classList.contains('remove-item')) {
-            e.target.closest('.ingredient-item').remove();
-            updateRemoveButtons();
+        // Show remove button if there's more than one item
+        function updateRemoveButtons() {
+            const items = container.querySelectorAll('.ingredient-item');
+            items.forEach(item => {
+                const removeBtn = item.querySelector('.remove-item');
+                removeBtn.style.display = items.length > 1 ? 'block' : 'none';
+            });
         }
+
+        // Add new item
+        addButton.addEventListener('click', function () {
+            const newItem = template.cloneNode(true);
+            // Clear values
+            newItem.querySelectorAll('input, select').forEach(input => {
+                input.value = '';
+            });
+            container.appendChild(newItem);
+            updateRemoveButtons();
+        });
+
+        // Remove item
+        container.addEventListener('click', function (e) {
+            if (e.target.classList.contains('remove-item')) {
+                e.target.closest('.ingredient-item').remove();
+                updateRemoveButtons();
+            }
+        });
     });
-});
 </script>
-{% endblock %} 
+{% endblock %}

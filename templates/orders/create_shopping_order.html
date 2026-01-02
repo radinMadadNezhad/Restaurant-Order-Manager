@@ -9,6 +9,7 @@
         border-bottom: 1px solid #dee2e6;
         padding: 1rem 0;
     }
+
     .shopping-item:last-child {
         border-bottom: none;
     }
@@ -17,38 +18,47 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-8 offset-md-2">
+    <div class="col-lg-8 offset-lg-2">
         <div class="card">
             <div class="card-header">
-                <h2 class="h5 mb-0">New Shopping Order</h2>
+                <h2 class="h4 mb-0">New Shopping Order</h2>
             </div>
             <div class="card-body">
                 <form method="post" id="orderForm">
                     {% csrf_token %}
-                    {{ form|crispy }}
 
-                    <div id="items-container">
-                        <h4 class="mb-3">Shopping Items</h4>
-                        <div class="shopping-item">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    {{ item_form.ingredient|as_crispy_field }}
-                                </div>
-                                <div class="col-md-3">
-                                    {{ item_form.quantity|as_crispy_field }}
-                                </div>
-                                <div class="col-md-3">
-                                    {{ item_form.notes|as_crispy_field }}
-                                </div>
-                                <div class="col-md-2">
-                                    <button type="button" class="btn btn-danger remove-item" style="display: none;">Remove</button>
+                    <div class="form-section">
+                        <h3 class="form-section-title">Order Information</h3>
+                        {{ form|crispy }}
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="form-section-title">Shopping Items</h3>
+                        <div id="items-container">
+                            <div class="shopping-item">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        {{ item_form.ingredient|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-3">
+                                        {{ item_form.quantity|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-3">
+                                        {{ item_form.notes|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        <button type="button" class="btn btn-danger btn-sm remove-item mb-3"
+                                            style="display: none;">Remove</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <button type="button" class="btn btn-secondary mt-3" id="addItem">Add Another Item</button>
-                    <button type="submit" class="btn btn-primary mt-3">Submit Order</button>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="addItem">Add Another Item</button>
+                        <button type="submit" class="btn btn-accent">Submit Order</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -58,63 +68,63 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('items-container');
-    const addButton = document.getElementById('addItem');
-    const template = container.querySelector('.shopping-item').cloneNode(true);
-    
-    // Show remove button if there's more than one item
-    function updateRemoveButtons() {
-        const items = container.querySelectorAll('.shopping-item');
-        items.forEach(item => {
-            const removeBtn = item.querySelector('.remove-item');
-            removeBtn.style.display = items.length > 1 ? 'block' : 'none';
-        });
-    }
+    document.addEventListener('DOMContentLoaded', function () {
+        const container = document.getElementById('items-container');
+        const addButton = document.getElementById('addItem');
+        const template = container.querySelector('.shopping-item').cloneNode(true);
 
-    // Add new item
-    addButton.addEventListener('click', function() {
-        const newItem = template.cloneNode(true);
-        // Clear values
-        newItem.querySelectorAll('input, select, textarea').forEach(input => {
-            input.value = '';
-            // Update the name attributes to ensure they're unique
-            if (input.name) {
-                const currentCount = container.querySelectorAll('.shopping-item').length;
-                input.name = input.name.replace(/\[\d*\]/, `[${currentCount}]`);
-                input.id = input.id.replace(/\_\d+$/, `_${currentCount}`);
-            }
-        });
-        container.appendChild(newItem);
-        updateRemoveButtons();
-    });
+        // Show remove button if there's more than one item
+        function updateRemoveButtons() {
+            const items = container.querySelectorAll('.shopping-item');
+            items.forEach(item => {
+                const removeBtn = item.querySelector('.remove-item');
+                removeBtn.style.display = items.length > 1 ? 'block' : 'none';
+            });
+        }
 
-    // Remove item
-    container.addEventListener('click', function(e) {
-        if (e.target.classList.contains('remove-item')) {
-            e.target.closest('.shopping-item').remove();
+        // Add new item
+        addButton.addEventListener('click', function () {
+            const newItem = template.cloneNode(true);
+            // Clear values
+            newItem.querySelectorAll('input, select, textarea').forEach(input => {
+                input.value = '';
+                // Update the name attributes to ensure they're unique
+                if (input.name) {
+                    const currentCount = container.querySelectorAll('.shopping-item').length;
+                    input.name = input.name.replace(/\[\d*\]/, `[${currentCount}]`);
+                    input.id = input.id.replace(/\_\d+$/, `_${currentCount}`);
+                }
+            });
+            container.appendChild(newItem);
             updateRemoveButtons();
-        }
-    });
+        });
 
-    // Handle form submission
-    document.getElementById('orderForm').addEventListener('submit', function(e) {
-        const items = container.querySelectorAll('.shopping-item');
-        let hasItems = false;
-        
-        items.forEach(item => {
-            const ingredient = item.querySelector('select[name*="ingredient"]').value;
-            const quantity = item.querySelector('input[name*="quantity"]').value;
-            if (ingredient && quantity) {
-                hasItems = true;
+        // Remove item
+        container.addEventListener('click', function (e) {
+            if (e.target.classList.contains('remove-item')) {
+                e.target.closest('.shopping-item').remove();
+                updateRemoveButtons();
             }
         });
 
-        if (!hasItems) {
-            e.preventDefault();
-            alert('Please add at least one item to the order.');
-        }
+        // Handle form submission
+        document.getElementById('orderForm').addEventListener('submit', function (e) {
+            const items = container.querySelectorAll('.shopping-item');
+            let hasItems = false;
+
+            items.forEach(item => {
+                const ingredient = item.querySelector('select[name*="ingredient"]').value;
+                const quantity = item.querySelector('input[name*="quantity"]').value;
+                if (ingredient && quantity) {
+                    hasItems = true;
+                }
+            });
+
+            if (!hasItems) {
+                e.preventDefault();
+                alert('Please add at least one item to the order.');
+            }
+        });
     });
-});
 </script>
-{% endblock %} 
+{% endblock %}
