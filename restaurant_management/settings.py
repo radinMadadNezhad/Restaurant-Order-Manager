@@ -37,9 +37,16 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
+    ".railway.app",
+    ".up.railway.app",
     ".tunels.tech",
     ".vercel.app",
 ]
+
+# Add Railway internal usage hostname
+if os.environ.get('RAILWAY_PUBLIC_DOMAIN'):
+    ALLOWED_HOSTS.append(os.environ.get('RAILWAY_PUBLIC_DOMAIN'))
+
 
 
 
@@ -214,7 +221,7 @@ SESSION_COOKIE_AGE = 86400  # 24 hours in seconds
 # CSRF Settings
 CSRF_TRUSTED_ORIGINS = os.environ.get(
     "CSRF_TRUSTED_ORIGINS",
-    "https://*.vercel.app,http://localhost:8000,http://127.0.0.1:8000"
+    "https://*.railway.app,https://*.up.railway.app,https://*.vercel.app,http://localhost:8000,http://127.0.0.1:8000"
 ).split(",")
 
 
