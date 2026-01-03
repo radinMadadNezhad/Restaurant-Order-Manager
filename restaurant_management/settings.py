@@ -34,18 +34,7 @@ SECRET_KEY = SECRET_KEY or 'dev-placeholder-secret-key'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    ".railway.app",
-    ".up.railway.app",
-    ".tunels.tech",
-    ".vercel.app",
-]
-
-# Add Railway internal usage hostname
-if os.environ.get('RAILWAY_PUBLIC_DOMAIN'):
-    ALLOWED_HOSTS.append(os.environ.get('RAILWAY_PUBLIC_DOMAIN'))
+ALLOWED_HOSTS = ["*"]
 
 
 
