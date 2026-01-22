@@ -48,142 +48,155 @@ tr.order-completed td {
     opacity: 0.8;
 }
 
-/* Landing page enhancements */
-.landing-page {
-    background: radial-gradient(circle at top left, #1b263b, #0d1b2a);
-    color: #f8f9fa;
-    min-height: 100vh;
+/* ============================================
+   Landing Page: Dark Luxury Aesthetic
+   ============================================ */
+body.landing-page {
+    --lp-bg-main: #0B1120;
+    --lp-bg-secondary: #1E293B;
+    --lp-accent: #D4AF37;
+    /* Metallic Gold */
+    --lp-accent-glow: rgba(212, 175, 55, 0.4);
+    --lp-text-main: #F8FAFC;
+    --lp-text-muted: #94A3B8;
+    --lp-card-bg: rgba(30, 41, 59, 0.7);
+    --lp-border: rgba(255, 255, 255, 0.1);
+
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--lp-bg-main);
+    color: var(--lp-text-main);
+    overflow-x: hidden;
 }
 
 .landing-page .navbar {
-    background: rgba(13, 27, 42, 0.85) !important;
+    background: rgba(11, 17, 32, 0.85) !important;
     backdrop-filter: blur(12px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    border-bottom: 1px solid var(--lp-border);
 }
 
-.landing-page .container {
-    max-width: 1100px;
+.landing-page .navbar-brand {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--lp-text-main) !important;
 }
 
-.landing-page .landing-wrapper {
-    margin-top: 2rem;
-    margin-bottom: 3rem;
+.landing-page .nav-link {
+    color: var(--lp-text-muted) !important;
+    transition: color 0.3s ease;
 }
 
-.landing-hero {
-    border-radius: 24px;
-    padding: 3rem;
-    background: rgba(15, 32, 51, 0.75);
-    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+.landing-page .nav-link:hover {
+    color: var(--lp-accent) !important;
+}
+
+/* Typography Overrides */
+.landing-page h1,
+.landing-page h2,
+.landing-page h3 {
+    font-family: 'Playfair Display', serif;
+    color: var(--lp-text-main);
+}
+
+/* Components */
+.lp-hero-section {
     position: relative;
+    padding: 8rem 0 6rem;
     overflow: hidden;
 }
 
-.landing-hero::after {
-    content: "";
+.lp-hero-section::before {
+    content: '';
     position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(46, 93, 140, 0.35), rgba(69, 162, 158, 0.2));
-    pointer-events: none;
+    top: -20%;
+    right: -10%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, var(--lp-accent-glow) 0%, transparent 70%);
+    opacity: 0.15;
+    filter: blur(60px);
+    z-index: -1;
 }
 
-.landing-hero h1 {
+.lp-hero-title {
+    font-size: 4.5rem;
+    line-height: 1.1;
     font-weight: 700;
-    font-size: clamp(2.5rem, 5vw, 3.5rem);
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
+    background: linear-gradient(to right, #fff, #cbd5e1);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
-.landing-hero p {
-    font-size: 1.15rem;
-    max-width: 580px;
+.lp-hero-subtitle {
+    font-size: 1.25rem;
+    color: var(--lp-text-muted);
+    font-weight: 300;
+    max-width: 540px;
+    margin-bottom: 3rem;
 }
 
-.feature-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-    gap: 1.5rem;
-    margin: 3rem 0;
-}
-
-.feature-card {
-    padding: 1.75rem;
-    background: rgba(15, 32, 51, 0.7);
-    border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.feature-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
-}
-
-.feature-card.active {
-    border-color: rgba(101, 214, 173, 0.75);
-    box-shadow: 0 22px 46px rgba(0, 0, 0, 0.35);
-}
-
-.feature-card.active i {
-    background: linear-gradient(145deg, rgba(101, 214, 173, 0.4), rgba(101, 214, 173, 0.2));
-    color: #f8f9fa;
-}
-
-.feature-card i {
-    font-size: 1.8rem;
-    margin-bottom: 1rem;
-    display: inline-flex;
-    width: 3rem;
-    height: 3rem;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-    background: linear-gradient(145deg, rgba(69, 162, 158, 0.3), rgba(69, 162, 158, 0.1));
-    color: #45a29e;
-}
-
-.stat-banner {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 1.5rem;
-    padding: 2rem;
-    border-radius: 18px;
-    background: rgba(15, 32, 51, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.stat-item h3 {
-    font-size: 2.25rem;
+.lp-btn-primary {
+    background-color: var(--lp-accent);
+    color: #0f172a;
     font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #65d6ad;
+    padding: 1rem 2.5rem;
+    border-radius: 99px;
+    letter-spacing: 0.5px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    box-shadow: 0 4px 20px var(--lp-accent-glow);
 }
 
-.cta-card {
-    margin-top: 3rem;
-    padding: 2.5rem;
-    background: linear-gradient(135deg, rgba(69, 162, 158, 0.45), rgba(90, 187, 178, 0.35));
-    border-radius: 20px;
-    text-align: center;
-    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.35);
+.lp-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px var(--lp-accent-glow);
+    background-color: #FACC15;
+    color: #0f172a;
 }
 
-.cta-card h2 {
-    font-weight: 600;
-    margin-bottom: 1rem;
+.lp-feature-card {
+    background: var(--lp-card-bg);
+    border: 1px solid var(--lp-border);
+    border-radius: 24px;
+    padding: 3rem 2rem;
+    height: 100%;
+    transition: transform 0.4s ease, border-color 0.4s ease;
+    backdrop-filter: blur(10px);
 }
 
-.cta-card p {
+.lp-feature-card:hover {
+    transform: translateY(-10px);
+    border-color: var(--lp-accent);
+}
+
+.lp-feature-icon {
+    font-size: 2.5rem;
+    color: var(--lp-accent);
     margin-bottom: 1.5rem;
 }
 
-@media (max-width: 768px) {
-    .landing-hero {
-        padding: 2rem;
-    }
+.lp-feature-title {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+}
 
-    .landing-page .landing-wrapper {
-        margin-top: 1.5rem;
+.lp-feature-text {
+    color: var(--lp-text-muted);
+    font-weight: 300;
+}
+
+/* Ambient Graphics */
+.decoration-circle {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid var(--lp-border);
+    z-index: -1;
+}
+
+@media (max-width: 768px) {
+    .lp-hero-title {
+        font-size: 3rem;
     }
 }
