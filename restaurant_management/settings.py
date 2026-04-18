@@ -128,23 +128,33 @@ else:
     # Use PostgreSQL in production
     # Override database configuration with PostgreSQL if DATABASE_URL is set
     if DATABASE_URL:
-        DATABASES = {'default': dj_database_url.parse(DATABASE_URL)}
-    else:
-        # Fallback configuration
-        postgres_db = os.environ.get('POSTGRES_DB', 'restaurant_db')
-        postgres_user = os.environ.get('POSTGRES_USER', 'postgres')
-        postgres_password = os.environ.get('POSTGRES_PASSWORD', 'postgres')
-        postgres_host = os.environ.get('POSTGRES_HOST', 'localhost')
-        postgres_port = os.environ.get('POSTGRES_PORT', '5432')
-        
+        db_from_url = dj_database_url.parse(DATABASE_URL)
+        # Add a connect_timeout so the app fails fast instead of hanging
+        # when the database is temporarily unreachable (avoids 30s gunicorn timeouts)
+        db_from_url.setdefault('OPTIONS', {})
+        db_from_url['OPTIONS'].setdefault('connect_timeout', 10)
+        DATABASES = {'default': db_from_url}
+    elif os.environ.get('POSTGRES_HOST'):
+        # Explicit individual Postgres env vars provided — use them
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.postgresql',
-                'NAME': postgres_db,
-                'USER': postgres_user,
-                'PASSWORD': postgres_password,
-                'HOST': postgres_host,
-                'PORT': postgres_port,
+                'NAME': os.environ.get('POSTGRES_DB', 'restaurant_db'),
+                'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+                'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'postgres'),
+                'HOST': os.environ.get('POSTGRES_HOST'),
+                'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+                'OPTIONS': {'connect_timeout': 10},
+            }
+        }
+    else:
+        # No database URL or host configured — fall back to the bundled SQLite.
+        # This prevents the app from hanging trying to reach a non-existent
+        # localhost PostgreSQL instance (which was the root cause of the 502 on login).
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
             }
         }
 
