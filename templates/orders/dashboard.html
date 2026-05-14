@@ -3,109 +3,349 @@
 
 {% block title %}Dashboard{% endblock %}
 
+{% block extra_css %}
+<style>
+  /* ── Summary cards ─────────────────────────────────────────── */
+  .stat-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 1.5rem 1.75rem;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    border-left: 4px solid #e07b39;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,0,0,0.09); }
+  .stat-card.blue  { border-left-color: #4a90d9; }
+  .stat-card.green { border-left-color: #3db87a; }
+  .stat-label { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #888; }
+  .stat-value { font-size: 2.4rem; font-weight: 700; color: #1a1a1a; line-height: 1; }
+  .stat-sub   { font-size: 0.82rem; color: #aaa; }
+
+  /* ── Section headings ──────────────────────────────────────── */
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid #f0ede8;
+  }
+
+  /* ── Chart card ────────────────────────────────────────────── */
+  .chart-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  }
+
+  /* ── Location badge ────────────────────────────────────────── */
+  .location-badge {
+    display: inline-block;
+    background: #fff4ee;
+    color: #c25e1a;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 0.22rem 0.7rem;
+    border-radius: 20px;
+    border: 1px solid #f4c9a8;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  /* ── Low-stock alerts ──────────────────────────────────────── */
+  .alert-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.9rem;
+    border-radius: 8px;
+    background: #fffaf7;
+    border: 1px solid #f5ddc8;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+  .alert-row .dot { width: 9px; height: 9px; border-radius: 50%; background: #e07b39; flex-shrink: 0; }
+  .alert-row.critical .dot { background: #d93025; }
+  .alert-qty { margin-left: auto; font-weight: 600; color: #b34a15; font-size: 0.85rem; white-space: nowrap; }
+
+  /* ── Orders list ───────────────────────────────────────────── */
+  .order-list-card {
+    background: #fff;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  }
+  .order-list-card .card-header {
+    background: #faf9f7;
+    border-bottom: 1px solid #f0ede8;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #1a1a1a;
+  }
+  .order-item {
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid #f7f5f2;
+    transition: background 0.1s;
+  }
+  .order-item:last-child { border-bottom: none; }
+  .order-item:hover { background: #fdfcfb; }
+  .badge-status {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+    border-radius: 20px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .badge-PENDING     { background: #fff3cd; color: #856404; }
+  .badge-IN_PROGRESS { background: #cfe2ff; color: #084298; }
+  .badge-COMPLETED   { background: #d1e7dd; color: #0a3622; }
+  .badge-PROCESSED   { background: #e2e3e5; color: #383d41; }
+  .badge-CANCELLED   { background: #f8d7da; color: #842029; }
+  .badge-SUBMITTED   { background: #fff3cd; color: #856404; }
+  .badge-CONFIRMED   { background: #cfe2ff; color: #084298; }
+  .badge-DRAFT       { background: #e2e3e5; color: #383d41; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="dashboard-header">
-    <h1>Dashboard</h1>
-    <p class="subtitle">Welcome, {{ user.get_role_display }}!</p>
-</div>
 
-<div class="info-card">
-    <p class="mb-2"><strong>Quick Tip:</strong> Use the navigation above to access orders, manage your account, or
-        create new requests.</p>
-    <p class="mb-0 text-muted small">Need help? Contact your manager for support.</p>
-</div>
-
-<div class="row">
-    {% if user|can_view_ingredient_order %}
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header">
-                <h2 class="h5 mb-0">Ingredient Orders</h2>
-            </div>
-            <div class="card-body">
-                {% if ingredient_orders %}
-                <div class="list-group">
-                    {% for order in ingredient_orders %}
-                    <div class="list-group-item">
-                        <div class="d-flex w-100 justify-content-between align-items-start">
-                            <h5 class="mb-1">
-                                <a href="{% url 'view_order_details' order_type='ingredient' order_id=order.id %}">
-                                    {% if order.order_title %}{{ order.order_title }}{% else %}Order #{{ order.id }}{% endif %}
-                                </a>
-                            </h5>
-                            <small class="text-muted">{{ order.created_at|date:"Y-m-d H:i" }}</small>
-                        </div>
-                        <p class="mb-1">Status: {{ order.get_status_display }}</p>
-                        <p class="mb-1">Ordered by: {{ order.orderer.username }}</p>
-                        {% if order.location %}
-                        <p class="mb-1">Location: {{ order.location }}</p>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="empty-state">
-                    <p class="text-muted mb-3">No ingredient orders found</p>
-                    {% if user|can_order_ingredients %}
-                    <a href="{% url 'create_ingredient_order' %}" class="btn btn-accent btn-sm">Create Your First
-                        Order</a>
-                    {% endif %}
-                </div>
-                {% endif %}
-                {% if user|can_order_ingredients %}
-                <div class="mt-3">
-                    <a href="{% url 'create_ingredient_order' %}" class="btn btn-accent">Create New Order</a>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
+<!-- ── Header ──────────────────────────────────────────────────────────── -->
+<div class="d-flex align-items-center justify-content-between mb-4 mt-2">
+  <div>
+    <h1 class="h3 mb-0" style="font-family:'Playfair Display',serif;font-weight:700;">
+      Dashboard
+      {% if user_location %}
+        <span class="location-badge">📍 {{ user_location }}</span>
+      {% elif is_global_admin %}
+        <span class="location-badge" style="background:#eef4ff;color:#1a4fa0;border-color:#b8d0f8;">🌐 All Locations</span>
+      {% endif %}
+    </h1>
+    <p class="text-muted small mb-0">Welcome back, {{ user.get_full_name|default:user.username }} · {{ user.get_role_display }}</p>
+  </div>
+  <div class="d-flex gap-2">
+    {% if user|can_order_ingredients %}
+    <a href="{% url 'create_ingredient_order' %}" class="btn btn-sm" style="background:#e07b39;color:#fff;border-radius:8px;font-weight:500;">+ Ingredient Order</a>
     {% endif %}
-
-    {% if user|can_view_shopping_order %}
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header">
-                <h2 class="h5 mb-0">Shopping Orders</h2>
-            </div>
-            <div class="card-body">
-                {% if shopping_orders %}
-                <div class="list-group">
-                    {% for order in shopping_orders %}
-                    <div class="list-group-item">
-                        <div class="d-flex w-100 justify-content-between align-items-start">
-                            <h5 class="mb-1">
-                                <a href="{% url 'view_order_details' order_type='shopping' order_id=order.id %}">Order
-                                    #{{ order.id }}</a>
-                            </h5>
-                            <small class="text-muted">{{ order.created_at|date:"Y-m-d H:i" }}</small>
-                        </div>
-                        <p class="mb-1">Status: {{ order.get_status_display }}</p>
-                        <p class="mb-1">Created by: {{ order.chef.username }}</p>
-                        {% if order.status == 'SUBMITTED' and user|can_confirm_shopping_order %}
-                        <a href="{% url 'confirm_shopping_order' order_id=order.id %}"
-                            class="btn btn-sm btn-success mt-2">Confirm Order</a>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="empty-state">
-                    <p class="text-muted mb-3">No shopping orders found</p>
-                    {% if user|can_submit_shopping_order %}
-                    <a href="{% url 'create_shopping_order' %}" class="btn btn-accent btn-sm">Create Your First
-                        Order</a>
-                    {% endif %}
-                </div>
-                {% endif %}
-                {% if user|can_submit_shopping_order %}
-                <div class="mt-3">
-                    <a href="{% url 'create_shopping_order' %}" class="btn btn-accent">Create New Order</a>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
+    {% if user|can_submit_shopping_order %}
+    <a href="{% url 'create_shopping_order' %}" class="btn btn-sm btn-outline-secondary" style="border-radius:8px;font-weight:500;">+ Shopping Order</a>
     {% endif %}
+  </div>
 </div>
+
+<!-- ── Summary Cards ───────────────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4">
+    <div class="stat-card">
+      <span class="stat-label">Orders Today</span>
+      <span class="stat-value">{{ orders_today }}</span>
+      <span class="stat-sub">ingredient orders</span>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card blue">
+      <span class="stat-label">Pending</span>
+      <span class="stat-value">{{ pending_orders }}</span>
+      <span class="stat-sub">awaiting action</span>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card green">
+      <span class="stat-label">Locations</span>
+      <span class="stat-value">{{ total_locations }}</span>
+      <span class="stat-sub">restaurant sites</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Chart + Low-stock ───────────────────────────────────────────────── -->
+<div class="row g-4 mb-4">
+
+  <!-- Chart -->
+  <div class="col-lg-7">
+    <div class="chart-card h-100">
+      <div class="section-title">Order Volume by Location <small class="text-muted" style="font-size:0.75rem;font-family:Outfit,sans-serif;font-weight:400;">(last 30 days)</small></div>
+      {% if chart_labels %}
+      <canvas id="locationChart" height="200"></canvas>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <div style="font-size:2.5rem;opacity:.35;">📦</div>
+        <div class="mt-2 small">No location data yet — orders will appear here once submitted.</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Low-stock alerts -->
+  <div class="col-lg-5">
+    <div class="chart-card h-100">
+      <div class="section-title">Low Stock Alerts</div>
+      {% if low_stock or never_received %}
+        {% for item in low_stock %}
+        <div class="alert-row{% if item.total_received < 2 %} critical{% endif %}">
+          <div class="dot"></div>
+          <div>
+            <strong>{{ item.ingredient__name }}</strong>
+            <span class="text-muted small"> · {{ item.ingredient__unit }}</span>
+          </div>
+          <span class="alert-qty">{{ item.total_received|floatformat:1 }} received</span>
+        </div>
+        {% endfor %}
+        {% for ing in never_received %}
+        <div class="alert-row critical">
+          <div class="dot"></div>
+          <div>
+            <strong>{{ ing.name }}</strong>
+            <span class="text-muted small"> · {{ ing.unit }}</span>
+          </div>
+          <span class="alert-qty">Never received</span>
+        </div>
+        {% endfor %}
+      {% else %}
+      <div class="text-center py-4 text-muted">
+        <div style="font-size:2rem;opacity:.35;">✅</div>
+        <div class="mt-2 small">All ingredients look well-stocked.</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Orders Tables ───────────────────────────────────────────────────── -->
+<div class="row g-4">
+
+  {% if user|can_view_ingredient_order %}
+  <div class="col-lg-6">
+    <div class="order-list-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Ingredient Orders</span>
+        {% if user|can_order_ingredients %}
+        <a href="{% url 'create_ingredient_order' %}" class="btn btn-sm" style="background:#e07b39;color:#fff;font-size:0.75rem;border-radius:6px;padding:0.2rem 0.65rem;">+ New</a>
+        {% endif %}
+      </div>
+      {% if ingredient_orders %}
+        {% for order in ingredient_orders|slice:":10" %}
+        <div class="order-item">
+          <div class="d-flex justify-content-between align-items-center">
+            <a href="{% url 'view_order_details' order_type='ingredient' order_id=order.id %}" style="font-weight:500;color:#1a1a1a;text-decoration:none;">
+              {% if order.order_title %}{{ order.order_title }}{% else %}Order #{{ order.id }}{% endif %}
+            </a>
+            <span class="badge-status badge-{{ order.status }}">{{ order.get_status_display }}</span>
+          </div>
+          <div class="small text-muted mt-1 d-flex gap-3">
+            <span>{{ order.created_at|date:"M j, Y" }}</span>
+            {% if order.location %}<span>📍 {{ order.location }}</span>{% endif %}
+            <span>by {{ order.orderer.username }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+      <div class="text-center py-4 text-muted small">No ingredient orders yet.</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if user|can_view_shopping_order %}
+  <div class="col-lg-6">
+    <div class="order-list-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Shopping Orders</span>
+        {% if user|can_submit_shopping_order %}
+        <a href="{% url 'create_shopping_order' %}" class="btn btn-sm" style="background:#4a90d9;color:#fff;font-size:0.75rem;border-radius:6px;padding:0.2rem 0.65rem;">+ New</a>
+        {% endif %}
+      </div>
+      {% if shopping_orders %}
+        {% for order in shopping_orders|slice:":10" %}
+        <div class="order-item">
+          <div class="d-flex justify-content-between align-items-center">
+            <a href="{% url 'view_order_details' order_type='shopping' order_id=order.id %}" style="font-weight:500;color:#1a1a1a;text-decoration:none;">
+              Shopping Order #{{ order.id }}
+            </a>
+            <span class="badge-status badge-{{ order.status }}">{{ order.get_status_display }}</span>
+          </div>
+          <div class="small text-muted mt-1 d-flex gap-3">
+            <span>{{ order.created_at|date:"M j, Y" }}</span>
+            <span>by {{ order.chef.username }}</span>
+          </div>
+          {% if order.status == 'SUBMITTED' and user|can_confirm_shopping_order %}
+          <div class="mt-1">
+            <a href="{% url 'confirm_shopping_order' order_id=order.id %}" class="btn btn-sm btn-success" style="font-size:0.75rem;padding:0.2rem 0.65rem;">Confirm</a>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+      <div class="text-center py-4 text-muted small">No shopping orders yet.</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if chart_labels %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+  const labels = {{ chart_labels|safe }};
+  const data   = {{ chart_data|safe }};
+
+  const COLORS = [
+    'rgba(224, 123, 57, 0.85)',
+    'rgba(74, 144, 217, 0.85)',
+    'rgba(61, 184, 122, 0.85)',
+    'rgba(155, 89, 182, 0.85)',
+  ];
+  const BORDERS = COLORS.map(c => c.replace('0.85', '1'));
+
+  new Chart(document.getElementById('locationChart'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Orders',
+        data: data,
+        backgroundColor: COLORS.slice(0, labels.length),
+        borderColor: BORDERS.slice(0, labels.length),
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.y} order${ctx.parsed.y !== 1 ? 's' : ''}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, font: { family: 'Outfit, sans-serif', size: 12 } },
+          grid: { color: 'rgba(0,0,0,0.04)' }
+        },
+        x: {
+          ticks: { font: { family: 'Outfit, sans-serif', size: 12 } },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+})();
+</script>
+{% endif %}
 {% endblock %}
