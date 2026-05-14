@@ -483,8 +483,11 @@ def process_ingredient_order(request, order_id):
     if not OrderService.user_can_process_ingredient_order(request.user):
         messages.error(request, "You don't have permission to process ingredient orders.")
         return redirect('dashboard')
-    
+
     order = get_object_or_404(IngredientOrder, id=order_id)
+    if not _user_can_access_location(request.user, order.location):
+        messages.error(request, "This order belongs to a different location.")
+        return redirect('dashboard')
     
     if request.method == 'POST':
         action = request.POST.get('action', 'process')
@@ -501,21 +504,31 @@ def process_ingredient_order(request, order_id):
     
     return render(request, 'orders/process_ingredient_order.html', {'order': order})
 
+def _user_can_access_location(user, order_location):
+    """Return True if user is a global admin or their location matches the order's."""
+    if user.is_superuser or user.is_admin_role():
+        return True
+    user_location = getattr(user, 'location', '') or ''
+    if not user_location:
+        # No location set — treat as global (backwards compatible)
+        return True
+    return not order_location or user_location == order_location
+
+
 @login_required
 def view_order_details(request, order_id, order_type):
     if order_type == 'ingredient':
         order = get_object_or_404(IngredientOrder, id=order_id)
-        # Check permissions
         if not OrderService.user_can_view_ingredient_order(request.user):
             messages.error(request, "You don't have permission to view this order.")
             return redirect('dashboard')
-        
-        # Now all users get items grouped by station
+        if not _user_can_access_location(request.user, order.location):
+            messages.error(request, "This order belongs to a different location.")
+            return redirect('dashboard')
         context = {
             'order': order,
             'items_by_station': order.get_items_by_station()
         }
-        
         template = 'orders/ingredient_order_details.html'
     else:  # shopping
         order = get_object_or_404(ShoppingOrder, id=order_id)
@@ -524,7 +537,7 @@ def view_order_details(request, order_id, order_type):
             return redirect('dashboard')
         context = {'order': order}
         template = 'orders/shopping_order_details.html'
-    
+
     return render(request, template, context)
 
 @login_required
@@ -564,7 +577,11 @@ def complete_shopping_order(request, order_id):
 @login_required
 def edit_ingredient_order(request, order_id):
     order = get_object_or_404(IngredientOrder, id=order_id, status='PENDING')
-    
+
+    if not _user_can_access_location(request.user, order.location):
+        messages.error(request, "This order belongs to a different location.")
+        return redirect('dashboard')
+
     # Check if user has permission to edit this order
     if not OrderService.user_can_edit_ingredient_order(request.user, order):
         messages.error(request, "You don't have permission to edit this order.")

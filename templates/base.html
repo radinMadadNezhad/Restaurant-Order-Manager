@@ -49,8 +49,13 @@
                 </ul>
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
-                    <li class="nav-item">
-                        <span class="nav-link text-muted small">{{ user.get_role_display }}</span>
+                    <li class="nav-item d-flex align-items-center gap-1">
+                        <span class="nav-link text-muted small pe-0">{{ user.get_role_display }}</span>
+                        {% if user.location %}
+                        <span class="badge rounded-pill" style="background:#fff4ee;color:#c25e1a;border:1px solid #f4c9a8;font-size:0.7rem;font-weight:600;padding:0.2rem 0.55rem;">📍 {{ user.location }}</span>
+                        {% elif user.is_superuser or user|is_admin_role %}
+                        <span class="badge rounded-pill" style="background:#eef4ff;color:#1a4fa0;border:1px solid #b8d0f8;font-size:0.7rem;font-weight:600;padding:0.2rem 0.55rem;">🌐 All Locations</span>
+                        {% endif %}
                     </li>
                     <li class="nav-item">
                         <form method="post" action="{% url 'logout' %}" class="d-inline">
