@@ -28,3 +28,8 @@ urlpatterns = [
     path('accounts/password_change/', auth_views.PasswordChangeView.as_view(), name='password_change'),
     path('accounts/password_change/done/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Custom error handlers (only active when DEBUG=False)
+handler403 = 'orders.views.error_403'
+handler404 = 'orders.views.error_404'
+handler500 = 'orders.views.error_500'

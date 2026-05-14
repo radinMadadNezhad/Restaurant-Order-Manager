@@ -2,11 +2,28 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponseForbidden
-from django.db import transaction
+from django.db import transaction, OperationalError, ProgrammingError
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
 from decimal import Decimal
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+# ── Custom error handlers ────────────────────────────────────────────────────
+
+def error_403(request, exception=None):
+    return render(request, '403.html', status=403)
+
+
+def error_404(request, exception=None):
+    return render(request, '404.html', status=404)
+
+
+def error_500(request):
+    return render(request, '500.html', status=500)
 from .models import (
     Ingredient,
     IngredientOrder,
@@ -262,30 +279,101 @@ def management_station_ingredients(request):
 
 @login_required
 def dashboard(request):
-    # Ingredient orders visibility aligned with service permissions
-    if OrderService.user_can_view_ingredient_order(request.user):
-        ingredient_orders = (
-            IngredientOrder.objects.select_related('orderer')
-            .all()
-            .order_by('-created_at')
-        )
-    else:
-        ingredient_orders = IngredientOrder.objects.none()
+    try:
+        user = request.user
+        is_global_admin = user.is_superuser or user.is_admin_role()
+        user_location = getattr(user, 'location', '') or ''
 
-    # Shopping orders visibility aligned with service permissions
-    if OrderService.user_can_view_shopping_order(request.user):
-        shopping_orders = (
-            ShoppingOrder.objects.select_related('chef').all().order_by('-created_at')
-        )
-    else:
-        shopping_orders = ShoppingOrder.objects.none()
+        # Ingredient orders — filter by location for non-admins
+        if OrderService.user_can_view_ingredient_order(user):
+            qs = IngredientOrder.objects.select_related('orderer').order_by('-created_at')
+            if not is_global_admin and user_location:
+                qs = qs.filter(location=user_location)
+            ingredient_orders = qs
+        else:
+            ingredient_orders = IngredientOrder.objects.none()
 
-    # Simple context without complex processing
-    context = {
-        'ingredient_orders': ingredient_orders,
-        'shopping_orders': shopping_orders,
-    }
-    return render(request, 'orders/dashboard.html', context)
+        # Shopping orders
+        if OrderService.user_can_view_shopping_order(user):
+            shopping_orders = ShoppingOrder.objects.select_related('chef').order_by('-created_at')
+        else:
+            shopping_orders = ShoppingOrder.objects.none()
+
+        # ── Dashboard stats ──────────────────────────────────────────────────
+        today = timezone.now().date()
+
+        orders_today_qs = IngredientOrder.objects.filter(created_at__date=today)
+        if not is_global_admin and user_location:
+            orders_today_qs = orders_today_qs.filter(location=user_location)
+        orders_today = orders_today_qs.count()
+
+        pending_qs = IngredientOrder.objects.filter(status=IngredientOrder.Status.PENDING)
+        if not is_global_admin and user_location:
+            pending_qs = pending_qs.filter(location=user_location)
+        pending_orders = pending_qs.count()
+
+        from accounts.models import CustomUser
+        total_locations = len([loc for loc, _ in CustomUser.LOCATION_CHOICES])
+
+        # ── Chart data: orders per location (last 30 days) ───────────────────
+        from django.db.models import Count
+        thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
+        location_qs = (
+            IngredientOrder.objects
+            .filter(created_at__gte=thirty_days_ago)
+            .exclude(location='')
+            .values('location')
+            .annotate(count=Count('id'))
+            .order_by('location')
+        )
+        chart_labels = [item['location'] for item in location_qs]
+        chart_data = [item['count'] for item in location_qs]
+
+        # ── Low-stock alerts: ingredients with quantity_in_stock below threshold ─
+        # Using ShoppingOrderItem received quantities as a proxy for stock levels
+        low_stock_threshold = 5
+        from django.db.models import Sum, F, FloatField
+        # Build a simple low-stock list from ShoppingIngredient names
+        # (actual stock tracking would need a stock model — we flag items
+        #  whose total received quantity is below threshold, or list all
+        #  ingredients that have never been received)
+        from .models import ShoppingIngredient
+        received_totals = (
+            ShoppingOrderItem.objects
+            .filter(quantity_received__isnull=False)
+            .values('ingredient__name', 'ingredient__unit')
+            .annotate(total_received=Sum('quantity_received'))
+        )
+        low_stock = [
+            item for item in received_totals
+            if (item['total_received'] or 0) < low_stock_threshold
+        ]
+        # Also include ingredients that have no received records at all
+        received_names = {r['ingredient__name'] for r in received_totals}
+        never_received = ShoppingIngredient.objects.exclude(name__in=received_names)[:10]
+
+        context = {
+            'ingredient_orders': ingredient_orders,
+            'shopping_orders': shopping_orders,
+            # Stats
+            'orders_today': orders_today,
+            'pending_orders': pending_orders,
+            'total_locations': total_locations,
+            # Chart
+            'chart_labels': chart_labels,
+            'chart_data': chart_data,
+            # Low stock
+            'low_stock': low_stock,
+            'never_received': never_received,
+            # Location context
+            'user_location': user_location,
+            'is_global_admin': is_global_admin,
+        }
+        return render(request, 'orders/dashboard.html', context)
+
+    except (OperationalError, ProgrammingError) as exc:
+        logger.error('Dashboard DB error: %s', exc)
+        return render(request, '500.html', status=500)
 
 @login_required
 def create_ingredient_order(request):
