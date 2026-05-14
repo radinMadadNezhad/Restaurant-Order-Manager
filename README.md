@@ -1,120 +1,191 @@
-# Restaurant Order Manager
+# 🍽️ Restaurant Order Manager
 
-A comprehensive full-stack solution for managing restaurant operations, ingredients ordering, and station workflows. This application streamlines the communication between kitchen staff and management, ensuring inventory needs are tracked and fulfilled efficiently.
+A Django web application for managing ingredient and shopping orders across multiple restaurant locations. Built for kitchen teams to coordinate stock requests, track order status, and reduce manual back-and-forth between stations and management.
 
-## Screenshots
+**Live Demo:** [https://restaurant-order-manager-production.up.railway.app/](https://restaurant-order-manager-production.up.railway.app/)
 
-### Welcome Page
-The landing page provides a clean entry point for staff and management.
-![Home Page](docs/screenshots/home_page.png)
-
-### Dashboard
-The central hub for tracking ingredient requests and shopping orders.
-![Dashboard](docs/screenshots/dashboard.png)
+> Demo credentials — Username: `admin_test` · Password: `password123`
 
 ---
 
-## Features
+## What It Does
 
--   **Role-Based Access Control**:
-    -   **Admin**: Full access to the Management Dashboard, User management, Station configuration, and Ingredient database.
-    -   **Staff**: Ability to create Ingredient Requests and view the main dashboard.
--   **Station-Centered Workflow**: Orders are organized by physical stations (e.g., Grill, Prep, Fridge), making it clear where supplies are needed.
--   **Multi-Location Support**: Manages operations across multiple restaurant branches (e.g., 180 Queen, 151 Yonge).
--   **Smart Order Processing**:
-    -   **Ingredient Orders**: Staff request items needed for their station.
-    -   **Shopping Orders**: Management aggregates requests into shopping lists for vendors.
--   **Status Tracking**: Real-time updates on order status (Pending, Processed, Submitted, Confirmed).
+- **Ingredient Orders** — Kitchen staff submit ingredient requests per station (Salad Bar, Sandwich Station, Hot Station, etc.). Orders move through Pending → In Progress → Completed.
+- **Shopping Orders** — Authorized users create procurement shopping lists. Admins confirm and mark items as received with actual quantities.
+- **Location-Based Access** — Users are tied to one of three restaurant locations. Location managers see only their site's orders; global admins see everything.
+- **Management Console** — Admins manage users, stations, ingredient lists, and station-ingredient assignments.
+- **Dashboard** — Real-time summary cards, Chart.js order-volume chart by location, and low-stock alerts.
 
-## How It Works
+---
 
-1.  **Staff Request (Ingredient Order)**:
-    -   A cook or station lead notices they are low on stock.
-    -   They log in and click "New Ingredient Order".
-    -   They select their **Station** and **Location**, and add items (Ingredient + Quantity).
-    -   The order appears on the Dashboard as "Pending".
+## Tech Stack
 
-2.  **Management Review**:
-    -   A manager or chef reviews the "Ingredient Orders" panel on the Dashboard.
-    -   They can mark orders as "Processed" once they are acknowledged.
+| Layer | Technology |
+|---|---|
+| Backend | Python 3.12 · Django 5.1 |
+| Database | PostgreSQL (production via Railway) · SQLite (local dev) |
+| Frontend | Bootstrap 5.3 · Chart.js 4 · WhiteNoise static files |
+| Auth | Django built-in auth + custom `CustomUser` model with role & location fields |
+| Hosting | [Railway](https://railway.app) |
+| Forms | django-crispy-forms · django-widget-tweaks |
 
-3.  **Procurement (Shopping Order)**:
-    -   To fulfill these needs, a manager creates a "New Shopping Order".
-    -   They compile the necessary items, possibly grouping requests from multiple stations.
-    -   This order tracks the external shopping process.
+---
 
-## Installation
+## Screenshots
+
+| Dashboard | Home Page |
+|---|---|
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Home](docs/screenshots/home_page.png) |
+
+> To add more screenshots: place `.png` files in `docs/screenshots/` and update this table.
+
+---
+
+## Local Setup
 
 ### Prerequisites
--   Python 3.10+
--   pip
--   (Optional) PostgreSQL (The app supports SQLite for local development)
 
-### Setup Steps
+- Python 3.10+
+- pip
+- (Optional) PostgreSQL if you want to test with the production DB engine
 
-1.  **Clone the Repository**
-    ```bash
-    git clone <repository_url>
-    cd <repository_name>
-    ```
+### 1. Clone the repo
 
-2.  **Create a Virtual Environment**
-    ```bash
-    python -m venv venv
-    # Windows
-    venv\Scripts\activate
-    # macOS/Linux
-    source venv/bin/activate
-    ```
+```bash
+git clone https://github.com/radinMadadNezhad/Restaurant-Order-Manager.git
+cd Restaurant-Order-Manager
+```
 
-3.  **Install Dependencies**
-    ```bash
-    pip install -r requirements.txt
-    ```
+### 2. Create a virtual environment
 
-4.  **Environment Configuration**
-    -   Copy `.env.example` to `.env`.
-    -   For local development, ensure the following are set in `.env`:
-        ```
-        DEBUG=True
-        USE_SQLITE_FALLBACK=True
-        SECRET_KEY=your-insecure-dev-key
-        ```
+```bash
+python -m venv venv
+source venv/bin/activate      # Linux/macOS
+venv\Scripts\activate         # Windows
+```
 
-5.  **Database Migration**
-    Apply the database schema:
-    ```bash
-    python manage.py migrate
-    ```
+### 3. Install dependencies
 
-6.  **Create Admin User**
-    You can create a superuser to access the management features:
-    ```bash
-    python manage.py createsuperuser
-    ```
-    *Alternatively, use the helper script:*
-    ```bash
-    python create_test_user.py
-    ```
-    (Creates user `admin_test` with password `password123`)
+```bash
+pip install -r requirements.txt
+```
 
-7.  **Run the Server**
-    ```bash
-    python manage.py runserver
-    ```
+### 4. Set up environment variables
 
-## Usage
+Copy the example file and edit it:
 
-1.  Open your browser and navigate to `http://127.0.0.1:8000/`.
-2.  **Login**: Click "Login" at the top right.
-    -   Use the credentials you created (e.g., `admin_test` / `password123`).
-3.  **Dashboard**: You will be redirected to the Dashboard.
-    -   **Create Order**: Use the sidebar or navigation links to create a new Ingredient Order.
-    -   **Management**: If you are an admin, click "Management" in the navbar to access the admin-specific dashboard for user and station setup.
+```bash
+cp .env.example .env
+```
 
-## Technical Stack
+Minimum required variables for local dev (see full list below):
 
--   **Backend**: Django 5.0 (Python)
--   **Database**: SQLite (Dev) / PostgreSQL (Prod)
--   **Frontend**: Django Templates, Bootstrap 4 (via `crispy-bootstrap4`), Custom CSS
--   **Forms**: `django-crispy-forms`, `django-widget-tweaks`
+```env
+SECRET_KEY=your-local-secret-key
+DEBUG=True
+ALLOW_INSECURE_SECRET_KEY=true
+USE_SQLITE_FALLBACK=true
+```
+
+### 5. Run migrations
+
+```bash
+python manage.py migrate
+```
+
+### 6. Create a superuser
+
+```bash
+python manage.py createsuperuser
+```
+
+### 7. Start the development server
+
+```bash
+python manage.py runserver
+```
+
+Visit [http://127.0.0.1:8000](http://127.0.0.1:8000)
+
+---
+
+## Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `SECRET_KEY` | ✅ Production | Django secret key |
+| `DEBUG` | ✅ | `True` for local dev, `False` in production |
+| `ALLOW_INSECURE_SECRET_KEY` | Dev only | Set `true` to skip SECRET_KEY check locally |
+| `DATABASE_URL` | Production | Full PostgreSQL connection string (set by Railway) |
+| `USE_SQLITE_FALLBACK` | Dev only | Set `true` to force SQLite |
+| `RAILWAY_PUBLIC_DOMAIN` | Auto (Railway) | Injected by Railway, added to `ALLOWED_HOSTS` |
+| `CSRF_TRUSTED_ORIGINS` | Optional | Comma-separated trusted origins for CSRF |
+| `ADMIN_EMAIL` | Optional | Email to receive contact form notifications |
+| `DEFAULT_FROM_EMAIL` | Optional | Sender address for outgoing emails |
+
+---
+
+## Project Structure
+
+```
+restaurant_management/    ← Django project settings, urls, wsgi
+accounts/                 ← CustomUser model (role + location fields)
+orders/                   ← Core app: models, views, forms, services, urls
+templates/                ← All HTML templates
+  base.html
+  403.html / 404.html / 500.html
+  orders/dashboard.html
+  orders/...
+  management/...
+  registration/...
+static/css/               ← Design system CSS + legacy styles
+docs/screenshots/         ← App screenshots for README
+```
+
+---
+
+## Roles & Locations
+
+There are three restaurant locations:
+
+- **180 Queen**
+- **151 Yonge**
+- **33 Yonge**
+
+Each user is assigned one of these locations (or left blank for global admin access). Roles:
+
+| Role | Can Do |
+|---|---|
+| **Admin** (global) | See all locations, manage users/stations/ingredients, confirm orders |
+| **Staff** | Create and process orders at their location |
+| **Orderer** | Submit ingredient orders for their location |
+
+Superusers always see all locations regardless of the `location` field.
+
+---
+
+## Deployment (Railway)
+
+The app is configured for Railway via `railway.json` and `Procfile.backup`. Railway injects `DATABASE_URL` and `RAILWAY_PUBLIC_DOMAIN` automatically.
+
+Key production settings already in place:
+
+- `DEBUG=False` (controlled by `DEBUG` env var, defaults to `False`)
+- `ALLOWED_HOSTS` includes `*.railway.app`
+- WhiteNoise serves static files
+- `SECURE_SSL_REDIRECT`, `SECURE_HSTS_SECONDS`, `SESSION_COOKIE_SECURE` all enabled in production
+
+---
+
+## Contributing
+
+1. Fork the repo
+2. Create a feature branch: `git checkout -b feat/my-feature`
+3. Commit your changes with a clear message
+4. Open a Pull Request
+
+---
+
+## License
+
+MIT — see `LICENSE` if included, otherwise contact the repo owner.
